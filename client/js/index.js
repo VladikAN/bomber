@@ -2,9 +2,7 @@ var config = {
     type: Phaser.AUTO,
     width: 800,
     height: 600,
-    physics: {
-        default: 'arcade'
-    },
+    physics: { default: 'arcade' },
     scene: {
         preload: preload,
         create: create,
@@ -47,12 +45,15 @@ function create () {
     cursors = this.input.keyboard.createCursorKeys();
 
     handleInput = handleInput.bind(this);
+    setupBlast = setupBlast.bind(this);
+    spawnBlast = spawnBlast.bind(this);
     setupBomb = setupBomb.bind(this);
     spawnBomb = spawnBomb.bind(this);
     setupPlayer = setupPlayer.bind(this);
     spawnPlayer = spawnPlayer.bind(this);
     alignToWorld = alignToWorld.bind(this);
 
+    setupBlast();
     setupBomb();
     setupPlayer();
 
@@ -100,6 +101,51 @@ function handleInput() {
     }
 }
 
+function setupBlast() {
+    this.anims.create({
+        key: 'be',
+        frames: this.anims.generateFrameNumbers('sprite', { frames: [42, 43, 44, 45, 46] }),
+        frameRate: consts.animFrameRate
+    });
+    this.anims.create({
+        key: 'bp',
+        frames: this.anims.generateFrameNumbers('sprite', { frames: [35, 36, 37, 38, 46] }),
+        frameRate: consts.animFrameRate
+    });
+    this.anims.create({
+        key: 'bf',
+        frames: this.anims.generateFrameNumbers('sprite', { frames: [28, 29, 30, 31, 46] }),
+        frameRate: consts.animFrameRate
+    });
+}
+
+function spawnBlast(x, y, s) {
+    var gameObj = this.physics.add.sprite(
+        x * consts.spriteFrame + consts.spriteOffset,
+        y * consts.spriteFrame + consts.spriteOffset,
+        'sprite');
+    gameObj.play('be');
+
+    var obs = [{ x: 0, y: -consts.spriteFrame, n: 0 },
+        { x: consts.spriteFrame, y: 0, n: 1 },
+        { x: 0, y: consts.spriteFrame, n: 2 },
+        { x: -consts.spriteFrame, y: 0, n: 3 }];
+
+    for (var o = 0; o < obs.length; o++) {
+        for (var i = 1; i <= s; i++) {
+            var offset = { x: obs[o].x * i, y: obs[o].y * i };
+            var tile = layer.getTileAtWorldXY(gameObj.x + offset.x, gameObj.y + offset.y, true);
+            if (tile && tile.index == tiles.free) {
+                var tmp = this.physics.add.sprite(gameObj.x + offset.x, gameObj.y + offset.y, 'sprite');
+                tmp.play(i == s ? 'bf' : 'bp');
+                tmp.angle = 90 * obs[o].n;
+            }
+        }
+    }
+
+    return { gameObj: gameObj };
+}
+
 function setupBomb() {
     this.anims.create({
         key: 'bomb',
@@ -109,22 +155,21 @@ function setupBomb() {
     });
 }
 
-function spawnBomb(x, y) {
+function spawnBomb(x, y, s) {
     var gameObj = this.physics.add.sprite(
         x * consts.spriteFrame + consts.spriteOffset,
         y * consts.spriteFrame + consts.spriteOffset,
         'sprite');
-    gameObj.setCollideWorldBounds(true);
     gameObj.play('bomb');
 
-    var bomb = {
-        gameObj: gameObj,
-        destroyed: false
-    };
+    var bomb = { gameObj: gameObj, power: s, destroyed: false };
 
     this.time.delayedCall(consts.bombTimer, function(b) {
         b.destroyed = true;
         b.gameObj.setActive(false).setVisible(false);
+
+        var crd = alignToWorld(gameObj.x, gameObj.y);
+        spawnBlast(crd.x, crd.y, b.power);
     }, [bomb], this);
 
     return bomb;
@@ -213,7 +258,6 @@ function spawnPlayer(x, y) {
                     state.push(this.bombs[i]);
                 }
             }
-
             this.bombs = state;
             return this.bombs.length < this.bombsCount;
         },
@@ -222,7 +266,7 @@ function spawnPlayer(x, y) {
                 return;
             }
             var crd = alignToWorld(gameObj.x, gameObj.y);
-            var bomb = spawnBomb(crd.x, crd.y);
+            var bomb = spawnBomb(crd.x, crd.y, this.power);
             this.bombs.push(bomb);
         }
     };
