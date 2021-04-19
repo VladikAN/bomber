@@ -13,12 +13,21 @@ var config = {
 };
 
 var consts = {
-    playerSpeed: 100,
+    playerSpeed: 48,
     animFrameRate: 12,
-    spriteFrame: 16
+    spriteFrame: 16,
+    spriteOffset: 8
+};
+
+var tiles = {
+    wall: 49,
+    free: 56,
+    brick: 50,
+    obstacle: [49, 50]
 };
 
 var map;
+var layer;
 var game = new Phaser.Game(config);
 
 var cursors;
@@ -32,7 +41,7 @@ function preload () {
 function create () {
     map = this.add.tilemap('map', consts.spriteFrame, consts.spriteFrame);
     var tileset = map.addTilesetImage('sprite');
-    var layer = map.createLayer(0, tileset, 0, 0);
+    layer = map.createLayer(0, tileset, 0, 0);
     layer.skipCull = true;
 
     cursors = this.input.keyboard.createCursorKeys();
@@ -46,7 +55,7 @@ function create () {
     setupBomb();
     setupPlayer();
 
-    player = spawnPlayer(0, 0);
+    player = spawnPlayer(1, 1);
 }
 
 function update() {
@@ -76,8 +85,10 @@ function setupBomb() {
 }
 
 function spawnBomb(x, y) {
-    var offset = consts.spriteFrame / 2;
-    var gameObj = this.physics.add.sprite(x, y, 'sprite');
+    var gameObj = this.physics.add.sprite(
+        x * consts.spriteFrame + consts.spriteOffset,
+        y * consts.spriteFrame + consts.spriteOffset,
+        'sprite');
     gameObj.setCollideWorldBounds(true);
     gameObj.play('bomb');
 
@@ -118,26 +129,41 @@ function setupPlayer() {
 }
 
 function spawnPlayer(x, y) {
-    var gameObj = this.physics.add.sprite(x, y, 'sprite');
+    var gameObj = this.physics.add.sprite(
+        x * consts.spriteFrame + consts.spriteOffset,
+        y * consts.spriteFrame + consts.spriteOffset,
+        'sprite');
     gameObj.setCollideWorldBounds(true);
     gameObj.play('player-idle');
     
     return {
         gameObj: gameObj,
         left: function() {
-            gameObj.setVelocityX(-consts.playerSpeed);
+            var tile = layer.getTileAtWorldXY(gameObj.x - consts.spriteOffset, gameObj.y, true);
+            if (tile.index == tiles.free) {
+                gameObj.setVelocityX(-consts.playerSpeed);
+            }
             gameObj.anims.play('player-left', true);
         },
         right: function() {
-            gameObj.setVelocityX(consts.playerSpeed);
+            var tile = layer.getTileAtWorldXY(gameObj.x + consts.spriteOffset, gameObj.y, true);
+            if (tile.index == tiles.free) {
+                gameObj.setVelocityX(consts.playerSpeed);
+            }
             gameObj.anims.play('player-right', true);
         },
         up: function() {
-            gameObj.setVelocityY(-consts.playerSpeed);
+            var tile = layer.getTileAtWorldXY(gameObj.x, gameObj.y - consts.spriteOffset, true);
+            if (tile.index == tiles.free) {
+                gameObj.setVelocityY(-consts.playerSpeed);
+            }
             gameObj.anims.play('player-up', true);
         },
         down: function() {
-            gameObj.setVelocityY(consts.playerSpeed);
+            var tile = layer.getTileAtWorldXY(gameObj.x, gameObj.y + consts.spriteOffset, true);
+            if (tile.index == tiles.free) {
+                gameObj.setVelocityY(consts.playerSpeed);
+            }
             gameObj.anims.play('player-down', true);
         },
         idle: function() {
@@ -152,7 +178,7 @@ function spawnPlayer(x, y) {
 
 function alignToWorld(x, y) {
     return {
-        x: Phaser.Math.Snap.Floor(x, consts.spriteFrame),
-        y: Phaser.Math.Snap.Floor(y, consts.spriteFrame)
+        x: Math.floor(x / consts.spriteFrame),
+        y: Math.floor(y / consts.spriteFrame)
     };
 }
