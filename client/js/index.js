@@ -14,6 +14,7 @@ var config = {
 
 var consts = {
     playerSpeed: 48,
+    bombTimer: 3000,
     animFrameRate: 12,
     spriteFrame: 16,
     spriteOffset: 8
@@ -22,8 +23,7 @@ var consts = {
 var tiles = {
     wall: 49,
     free: 56,
-    brick: 50,
-    obstacle: [49, 50]
+    brick: 50
 };
 
 var map;
@@ -46,6 +46,7 @@ function create () {
 
     cursors = this.input.keyboard.createCursorKeys();
 
+    handleInput = handleInput.bind(this);
     setupBomb = setupBomb.bind(this);
     spawnBomb = spawnBomb.bind(this);
     setupPlayer = setupPlayer.bind(this);
@@ -59,19 +60,43 @@ function create () {
 }
 
 function update() {
+    handleInput();
+}
+
+function handleInput() {
+    var lr = cursors.left.isDown || cursors.right.isDown;
+    var ud = cursors.up.isDown || cursors.down.isDown;
+    var none = cursors.space.isUp && !lr && !ud;
+
     player.gameObj.setVelocity(0);
+
+    if (none) {
+        player.idle();
+        return;
+    }
+
     if (cursors.space.isDown) {
         player.placeBomb();
-    } else if (cursors.left.isDown) {
-        player.left();
-    } else if (cursors.right.isDown) {
-        player.right();
-    } else if (cursors.up.isDown) {
-        player.up();
-    } else if (cursors.down.isDown) {
-        player.down();
-    } else {
-        player.idle();
+    }
+    
+    if (lr) {
+        if (cursors.left.isDown) {
+            player.left();
+        } else if (cursors.right.isDown) {
+            player.right();
+        }
+
+        return;
+    }
+    
+    if (ud) {
+        if (cursors.up.isDown) {
+            player.up();
+        } else if (cursors.down.isDown) {
+            player.down();
+        }
+
+        return;
     }
 }
 
@@ -92,9 +117,17 @@ function spawnBomb(x, y) {
     gameObj.setCollideWorldBounds(true);
     gameObj.play('bomb');
 
-    return {
-        gameObj: gameObj
+    var bomb = {
+        gameObj: gameObj,
+        destroyed: false
     };
+
+    this.time.delayedCall(consts.bombTimer, function(b) {
+        b.destroyed = true;
+        b.gameObj.setActive(false).setVisible(false);
+    }, [bomb], this);
+
+    return bomb;
 }
 
 function setupPlayer() {
@@ -133,35 +166,39 @@ function spawnPlayer(x, y) {
         x * consts.spriteFrame + consts.spriteOffset,
         y * consts.spriteFrame + consts.spriteOffset,
         'sprite');
+    gameObj.setDepth(1);
     gameObj.setCollideWorldBounds(true);
     gameObj.play('player-idle');
     
     return {
         gameObj: gameObj,
+        power: 1,
+        bombsCount: 1,
+        bombs: [],
         left: function() {
             var tile = layer.getTileAtWorldXY(gameObj.x - consts.spriteOffset, gameObj.y, true);
-            if (tile.index == tiles.free) {
+            if (tile && tile.index == tiles.free) {
                 gameObj.setVelocityX(-consts.playerSpeed);
             }
             gameObj.anims.play('player-left', true);
         },
         right: function() {
             var tile = layer.getTileAtWorldXY(gameObj.x + consts.spriteOffset, gameObj.y, true);
-            if (tile.index == tiles.free) {
+            if (tile && tile.index == tiles.free) {
                 gameObj.setVelocityX(consts.playerSpeed);
             }
             gameObj.anims.play('player-right', true);
         },
         up: function() {
             var tile = layer.getTileAtWorldXY(gameObj.x, gameObj.y - consts.spriteOffset, true);
-            if (tile.index == tiles.free) {
+            if (tile && tile.index == tiles.free) {
                 gameObj.setVelocityY(-consts.playerSpeed);
             }
             gameObj.anims.play('player-up', true);
         },
         down: function() {
             var tile = layer.getTileAtWorldXY(gameObj.x, gameObj.y + consts.spriteOffset, true);
-            if (tile.index == tiles.free) {
+            if (tile && tile.index == tiles.free) {
                 gameObj.setVelocityY(consts.playerSpeed);
             }
             gameObj.anims.play('player-down', true);
@@ -169,9 +206,24 @@ function spawnPlayer(x, y) {
         idle: function() {
             gameObj.anims.play('player-idle', true);
         },
+        hasBombs: function() {
+            var state = [];
+            for (var i = 0; i < this.bombs.length; i++) {
+                if (!this.bombs[i].destroyed) {
+                    state.push(this.bombs[i]);
+                }
+            }
+
+            this.bombs = state;
+            return this.bombs.length < this.bombsCount;
+        },
         placeBomb: function() {
+            if (!this.hasBombs()) {
+                return;
+            }
             var crd = alignToWorld(gameObj.x, gameObj.y);
-            spawnBomb(crd.x, crd.y);
+            var bomb = spawnBomb(crd.x, crd.y);
+            this.bombs.push(bomb);
         }
     };
 }
