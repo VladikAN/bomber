@@ -45,12 +45,14 @@ function create () {
     cursors = this.input.keyboard.createCursorKeys();
 
     handleInput = handleInput.bind(this);
+    
     setupBlast = setupBlast.bind(this);
     spawnBlast = spawnBlast.bind(this);
     setupBomb = setupBomb.bind(this);
     spawnBomb = spawnBomb.bind(this);
     setupPlayer = setupPlayer.bind(this);
     spawnPlayer = spawnPlayer.bind(this);
+
     alignToWorld = alignToWorld.bind(this);
 
     setupBlast();
@@ -67,16 +69,15 @@ function update() {
 function handleInput() {
     var lr = cursors.left.isDown || cursors.right.isDown;
     var ud = cursors.up.isDown || cursors.down.isDown;
-    var none = cursors.space.isUp && !lr && !ud;
 
     player.gameObj.setVelocity(0);
 
-    if (none) {
+    if (!lr && !ud) {
         player.idle();
         return;
     }
 
-    if (cursors.space.isDown) {
+    if (Phaser.Input.Keyboard.JustDown(cursors.space)) {
         player.placeBomb();
     }
     
@@ -120,26 +121,30 @@ function setupBlast() {
 }
 
 function spawnBlast(x, y, s) {
+    // Put blast emitter
     var gameObj = this.physics.add.sprite(
         x * consts.spriteFrame + consts.spriteOffset,
         y * consts.spriteFrame + consts.spriteOffset,
         'sprite');
     gameObj.play('be');
 
+    // Four directions to observe
     var obs = [{ x: 0, y: -consts.spriteFrame, n: 0 },
         { x: consts.spriteFrame, y: 0, n: 1 },
         { x: 0, y: consts.spriteFrame, n: 2 },
         { x: -consts.spriteFrame, y: 0, n: 3 }];
 
+    // Put blast waves in four directions
     for (var o = 0; o < obs.length; o++) {
         for (var i = 1; i <= s; i++) {
             var offset = { x: obs[o].x * i, y: obs[o].y * i };
             var tile = layer.getTileAtWorldXY(gameObj.x + offset.x, gameObj.y + offset.y, true);
-            if (tile && tile.index == tiles.free) {
-                var tmp = this.physics.add.sprite(gameObj.x + offset.x, gameObj.y + offset.y, 'sprite');
-                tmp.play(i == s ? 'bf' : 'bp');
-                tmp.angle = 90 * obs[o].n;
+            if (!tile || tile.index != tiles.free) {
+                break;
             }
+            var tmp = this.physics.add.sprite(gameObj.x + offset.x, gameObj.y + offset.y, 'sprite');
+            tmp.play(i == s ? 'bf' : 'bp');
+            tmp.angle = 90 * obs[o].n;
         }
     }
 
@@ -217,8 +222,8 @@ function spawnPlayer(x, y) {
     
     return {
         gameObj: gameObj,
-        power: 1,
-        bombsCount: 1,
+        power: 2,
+        bombsCount: 3,
         bombs: [],
         left: function() {
             var tile = layer.getTileAtWorldXY(gameObj.x - consts.spriteOffset, gameObj.y, true);
