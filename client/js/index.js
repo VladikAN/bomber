@@ -29,6 +29,7 @@ var layer;
 var game = new Phaser.Game(config);
 
 var cursors;
+var debugGraphics;
 var player;
 
 function preload () {
@@ -40,9 +41,10 @@ function create () {
     map = this.add.tilemap('map', consts.spriteFrame, consts.spriteFrame);
     var tileset = map.addTilesetImage('sprite');
     layer = map.createLayer(0, tileset, 0, 0);
-    layer.skipCull = true;
+    layer.setCollision([tiles.wall, tiles.brick]);
 
     cursors = this.input.keyboard.createCursorKeys();
+    debugGraphics = this.add.graphics();
 
     handleInput = handleInput.bind(this);
     
@@ -54,6 +56,7 @@ function create () {
     spawnPlayer = spawnPlayer.bind(this);
 
     alignToWorld = alignToWorld.bind(this);
+    drawDebug = drawDebug.bind(this);
 
     setupBlast();
     setupBomb();
@@ -62,7 +65,18 @@ function create () {
     player = spawnPlayer(1, 1);
 }
 
+function drawDebug() {
+    debugGraphics.clear();
+
+    layer.renderDebug(debugGraphics, {
+        tileColor: new Phaser.Display.Color(0, 200, 0, 200),
+        collidingTileColor: new Phaser.Display.Color(200, 0, 0, 200),
+        faceColor: new Phaser.Display.Color(0, 0, 200, 200)
+    });
+}
+
 function update() {
+    //drawDebug();
     handleInput();
 }
 
@@ -212,13 +226,18 @@ function setupPlayer() {
 }
 
 function spawnPlayer(x, y) {
+    // Draw player
     var gameObj = this.physics.add.sprite(
         x * consts.spriteFrame + consts.spriteOffset,
         y * consts.spriteFrame + consts.spriteOffset,
         'sprite');
-    gameObj.setDepth(1);
-    gameObj.setCollideWorldBounds(true);
+    gameObj.setDepth(1); // put on top of others
     gameObj.play('player-idle');
+
+    // Setup physics
+    gameObj.setCollideWorldBounds(true);
+    gameObj.setSize(consts.spriteFrame * .5, consts.spriteFrame * .8);
+    this.physics.add.collider(gameObj, layer);
     
     return {
         gameObj: gameObj,
@@ -226,31 +245,19 @@ function spawnPlayer(x, y) {
         bombsCount: 3,
         bombs: [],
         left: function() {
-            var tile = layer.getTileAtWorldXY(gameObj.x - consts.spriteOffset, gameObj.y, true);
-            if (tile && tile.index == tiles.free) {
-                gameObj.setVelocityX(-consts.playerSpeed);
-            }
+            gameObj.setVelocityX(-consts.playerSpeed);
             gameObj.anims.play('player-left', true);
         },
         right: function() {
-            var tile = layer.getTileAtWorldXY(gameObj.x + consts.spriteOffset, gameObj.y, true);
-            if (tile && tile.index == tiles.free) {
-                gameObj.setVelocityX(consts.playerSpeed);
-            }
+            gameObj.setVelocityX(consts.playerSpeed);
             gameObj.anims.play('player-right', true);
         },
         up: function() {
-            var tile = layer.getTileAtWorldXY(gameObj.x, gameObj.y - consts.spriteOffset, true);
-            if (tile && tile.index == tiles.free) {
-                gameObj.setVelocityY(-consts.playerSpeed);
-            }
+            gameObj.setVelocityY(-consts.playerSpeed);
             gameObj.anims.play('player-up', true);
         },
         down: function() {
-            var tile = layer.getTileAtWorldXY(gameObj.x, gameObj.y + consts.spriteOffset, true);
-            if (tile && tile.index == tiles.free) {
-                gameObj.setVelocityY(consts.playerSpeed);
-            }
+            gameObj.setVelocityY(consts.playerSpeed);
             gameObj.anims.play('player-down', true);
         },
         idle: function() {
