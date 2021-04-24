@@ -50,7 +50,7 @@ function create () {
     setupBlast = setupBlast.bind(this);
     spawnBlast = spawnBlast.bind(this);
     setupBricks = setupBricks.bind(this);
-    spawnBricks = spawnBricks.bind(this);
+    destroyBricks = destroyBricks.bind(this);
     setupBomb = setupBomb.bind(this);
     spawnBomb = spawnBomb.bind(this);
     setupPlayer = setupPlayer.bind(this);
@@ -139,17 +139,17 @@ function handleInput() {
 
 function setupBlast() {
     this.anims.create({
-        key: 'be',
+        key: 'blast-emitter',
         frames: this.anims.generateFrameNumbers('sprite', { frames: [42, 43, 44, 45, 46] }),
         frameRate: consts.animFrameRate
     });
     this.anims.create({
-        key: 'bp',
+        key: 'blast-wave',
         frames: this.anims.generateFrameNumbers('sprite', { frames: [35, 36, 37, 38, 46] }),
         frameRate: consts.animFrameRate
     });
     this.anims.create({
-        key: 'bf',
+        key: 'blast-edge',
         frames: this.anims.generateFrameNumbers('sprite', { frames: [28, 29, 30, 31, 46] }),
         frameRate: consts.animFrameRate
     });
@@ -161,7 +161,8 @@ function spawnBlast(x, y, s) {
         x * consts.spriteFrame + consts.spriteOffset,
         y * consts.spriteFrame + consts.spriteOffset,
         'sprite');
-    gameObj.play('be');
+    gameObj.play('blast-emitter');
+    gameObj.once('animationcomplete', () => { gameObj.destroy() });
 
     // Four directions to observe
     var obs = [{ x: 0, y: -consts.spriteFrame, n: 0 },
@@ -169,28 +170,46 @@ function spawnBlast(x, y, s) {
         { x: 0, y: consts.spriteFrame, n: 2 },
         { x: -consts.spriteFrame, y: 0, n: 3 }];
 
+    var bricks = [];
+
     // Put blast waves in four directions
-    for (var o = 0; o < obs.length; o++) {
+    for (var d = 0; d < obs.length; d++) {
         for (var i = 1; i <= s; i++) {
-            var offset = { x: obs[o].x * i, y: obs[o].y * i };
+            var offset = { x: obs[d].x * i, y: obs[d].y * i };
+            
+            // Remember brick wall for later destruction
             var tile = levelLayer.getTileAtWorldXY(gameObj.x + offset.x, gameObj.y + offset.y, true);
             if (!tile || tile.index != tiles.free) {
-                spawnBricks(tile);
+                bricks.push(tile);
                 break;
             }
-            var tmp = this.physics.add.sprite(gameObj.x + offset.x, gameObj.y + offset.y, 'sprite');
-            tmp.play(i == s ? 'bf' : 'bp');
-            tmp.angle = 90 * obs[o].n;
+
+            // Locate player and bombs
+
+            // Spawn blast wave
+            var waveObj = this.physics.add.sprite(gameObj.x + offset.x, gameObj.y + offset.y, 'sprite');
+            waveObj.angle = 90 * obs[d].n;
+            waveObj.play(i == s ? 'blast-edge' : 'blast-wave');
+            waveObj.once('animationcomplete', () => { waveObj.destroy() });
         }
+    }
+
+    // Destroy brick walls
+    for (var i = 0; i < bricks.length; i++) {
+        destroyBricks(bricks[i]);
     }
 
     return { gameObj: gameObj };
 }
 
-function spawnBricks(tile) {
+function destroyBricks(tile) {
     if (!tile || tile.index != tiles.brick) {
         return;
     }
+
+    // Swap tile and remove collision
+    tile.setCollision(false);
+    tile.index = 56;
 
     // Spawn animated brick wall
     var gameObj = this.physics.add.sprite(
@@ -198,22 +217,21 @@ function spawnBricks(tile) {
         (tile.y + 1) * consts.spriteFrame + consts.spriteOffset,
         'sprite');
     gameObj.play('brick-destroy');
-
-    // Swap tile and remove collision
-    tile.setCollision(false);
-    tile.index = 56;
+    gameObj.once('animationcomplete', () => { gameObj.destroy() });
 }
 
 function setupBricks() {
     this.anims.create({
         key: 'brick-idle',
         frames: this.anims.generateFrameNumbers('sprite', { frames: [50] }),
+        repeat: 0
     });
 
     this.anims.create({
         key: 'brick-destroy',
         frames: this.anims.generateFrameNumbers('sprite', { frames: [50, 51, 52, 53, 54, 55] }),
-        frameRate: consts.animFrameRate
+        frameRate: consts.animFrameRate,
+        repeat: 0
     });
 }
 
@@ -227,29 +245,36 @@ function setupBomb() {
 }
 
 function spawnBomb(x, y, s) {
+    // Draw bomb
     var gameObj = this.physics.add.sprite(
         x * consts.spriteFrame + consts.spriteOffset,
         y * consts.spriteFrame + consts.spriteOffset,
         'sprite');
     gameObj.play('bomb');
 
-    var bomb = { gameObj: gameObj, power: s, destroyed: false };
+    var bomb = {
+        gameObj: gameObj,
+        power: s,
+        destroyed: false,
+        boom: function() {
+            this.destroyed = true;
+            gameObj.setActive(false).setVisible(false);
 
-    this.time.delayedCall(consts.bombTimer, function(b) {
-        b.destroyed = true;
-        b.gameObj.setActive(false).setVisible(false);
+            var crd = alignToWorld(gameObj.x, gameObj.y);
+            spawnBlast(crd.x, crd.y, this.power);
+        }
+    };
 
-        var crd = alignToWorld(gameObj.x, gameObj.y);
-        spawnBlast(crd.x, crd.y, b.power);
-    }, [bomb], this);
-
+    // Bomb timer out
+    this.time.delayedCall(consts.bombTimer, function(b) { b.boom(); }, [bomb], this);
     return bomb;
 }
 
 function setupPlayer() {
     this.anims.create({
         key: 'player-idle',
-        frames: this.anims.generateFrameNumbers('sprite', { frames: [4] })
+        frames: this.anims.generateFrameNumbers('sprite', { frames: [4] }),
+        repeat: 0
     });
     this.anims.create({
         key: 'player-left',
@@ -274,6 +299,12 @@ function setupPlayer() {
         frames: this.anims.generateFrameNumbers('sprite', { frames: [3, 4, 5] }),
         frameRate: consts.animFrameRate,
         repeat: -1
+    });
+    this.anims.create({
+        key: 'player-death',
+        frames: this.anims.generateFrameNumbers('sprite', { frames: [14, 15, 16, 17, 18] }),
+        frameRate: consts.animFrameRate,
+        repeat: 0
     });
 }
 
@@ -316,11 +347,18 @@ function spawnPlayer(x, y) {
         idle: function() {
             gameObj.anims.play('player-idle', true);
         },
+        die: function() {
+            gameObj.anims.play('player-death', true);
+            gameObj.once('animationcomplete', () => { gameObj.setActive(false).setVisible(false); });
+        },
         hasBombs: function() {
             var state = [];
             for (var i = 0; i < this.bombs.length; i++) {
                 if (!this.bombs[i].destroyed) {
                     state.push(this.bombs[i]);
+                } else {
+                    // clean-up resources
+                    this.bombs[i].gameObj.destroy();
                 }
             }
             this.bombs = state;
