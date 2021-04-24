@@ -1,21 +1,11 @@
-var config = {
-    type: Phaser.AUTO,
-    width: 800,
-    height: 600,
-    physics: { default: 'arcade' },
-    scene: {
-        preload: preload,
-        create: create,
-        update: update
-    }
-};
-
 var consts = {
     playerSpeed: 48,
     bombTimer: 3000,
     animFrameRate: 12,
     spriteFrame: 16,
-    spriteOffset: 8
+    spriteOffset: 8,
+    screenW: 800,
+    screenH: 600
 };
 
 var tiles = {
@@ -24,10 +14,23 @@ var tiles = {
     brick: 50
 };
 
-var map;
-var layer;
+var config = {
+    type: Phaser.AUTO,
+    width: consts.screenW,
+    height: consts.screenH,
+    physics: { default: 'arcade' },
+    scene: {
+        preload: preload,
+        create: create,
+        update: update
+    }
+};
+
 var game = new Phaser.Game(config);
 
+var map;
+var levelLayer;
+var edgeLayer;
 var cursors;
 var debugGraphics;
 var player;
@@ -38,18 +41,16 @@ function preload () {
 }
 
 function create () {
-    map = this.add.tilemap('map', consts.spriteFrame, consts.spriteFrame);
-    var tileset = map.addTilesetImage('sprite');
-    layer = map.createLayer(0, tileset, 0, 0);
-    layer.setCollision([tiles.wall, tiles.brick]);
-
     cursors = this.input.keyboard.createCursorKeys();
-    debugGraphics = this.add.graphics();
+    debugGraphics = this.add.graphics(); // tmp
 
+    loadMap = loadMap.bind(this);
     handleInput = handleInput.bind(this);
     
     setupBlast = setupBlast.bind(this);
     spawnBlast = spawnBlast.bind(this);
+    setupBricks = setupBricks.bind(this);
+    spawnBricks = spawnBricks.bind(this);
     setupBomb = setupBomb.bind(this);
     spawnBomb = spawnBomb.bind(this);
     setupPlayer = setupPlayer.bind(this);
@@ -60,15 +61,35 @@ function create () {
 
     setupBlast();
     setupBomb();
+    setupBricks();
     setupPlayer();
 
+    loadMap();
+
     player = spawnPlayer(1, 1);
+}
+
+function loadMap() {
+    map = this.add.tilemap('map', consts.spriteFrame, consts.spriteFrame);
+    var tileset = map.addTilesetImage('sprite');
+
+    // Create level from csv
+    levelLayer = map.createLayer(0, tileset, consts.spriteFrame, consts.spriteFrame);
+    levelLayer.setCollision([tiles.wall, tiles.brick]);
+    
+    // Create rect around the level
+    edgeLayer = map.createBlankLayer('edge', tileset, 0, 0, map.width + 2, map.height + 2);
+    edgeLayer.setCollision([tiles.wall]);
+    edgeLayer.fill(tiles.wall, 0, 0, map.width + 2, 1);
+    edgeLayer.fill(tiles.wall, 0, map.height + 1, map.width + 2, 1);
+    edgeLayer.fill(tiles.wall, 0, 0, 1, map.height + 2);
+    edgeLayer.fill(tiles.wall, map.width + 1, 0, 1, map.height + 2);
 }
 
 function drawDebug() {
     debugGraphics.clear();
 
-    layer.renderDebug(debugGraphics, {
+    levelLayer.renderDebug(debugGraphics, {
         tileColor: new Phaser.Display.Color(0, 200, 0, 200),
         collidingTileColor: new Phaser.Display.Color(200, 0, 0, 200),
         faceColor: new Phaser.Display.Color(0, 0, 200, 200)
@@ -86,13 +107,13 @@ function handleInput() {
 
     player.gameObj.setVelocity(0);
 
+    if (Phaser.Input.Keyboard.JustDown(cursors.space)) {
+        player.placeBomb();
+    }
+    
     if (!lr && !ud) {
         player.idle();
         return;
-    }
-
-    if (Phaser.Input.Keyboard.JustDown(cursors.space)) {
-        player.placeBomb();
     }
     
     if (lr) {
@@ -152,8 +173,9 @@ function spawnBlast(x, y, s) {
     for (var o = 0; o < obs.length; o++) {
         for (var i = 1; i <= s; i++) {
             var offset = { x: obs[o].x * i, y: obs[o].y * i };
-            var tile = layer.getTileAtWorldXY(gameObj.x + offset.x, gameObj.y + offset.y, true);
+            var tile = levelLayer.getTileAtWorldXY(gameObj.x + offset.x, gameObj.y + offset.y, true);
             if (!tile || tile.index != tiles.free) {
+                spawnBricks(tile);
                 break;
             }
             var tmp = this.physics.add.sprite(gameObj.x + offset.x, gameObj.y + offset.y, 'sprite');
@@ -163,6 +185,36 @@ function spawnBlast(x, y, s) {
     }
 
     return { gameObj: gameObj };
+}
+
+function spawnBricks(tile) {
+    if (!tile || tile.index != tiles.brick) {
+        return;
+    }
+
+    // Spawn animated brick wall
+    var gameObj = this.physics.add.sprite(
+        (tile.x + 1) * consts.spriteFrame + consts.spriteOffset,
+        (tile.y + 1) * consts.spriteFrame + consts.spriteOffset,
+        'sprite');
+    gameObj.play('brick-destroy');
+
+    // Swap tile and remove collision
+    tile.setCollision(false);
+    tile.index = 56;
+}
+
+function setupBricks() {
+    this.anims.create({
+        key: 'brick-idle',
+        frames: this.anims.generateFrameNumbers('sprite', { frames: [50] }),
+    });
+
+    this.anims.create({
+        key: 'brick-destroy',
+        frames: this.anims.generateFrameNumbers('sprite', { frames: [50, 51, 52, 53, 54, 55] }),
+        frameRate: consts.animFrameRate
+    });
 }
 
 function setupBomb() {
@@ -237,7 +289,8 @@ function spawnPlayer(x, y) {
     // Setup physics
     gameObj.setCollideWorldBounds(true);
     gameObj.setSize(consts.spriteFrame * .5, consts.spriteFrame * .8);
-    this.physics.add.collider(gameObj, layer);
+    this.physics.add.collider(gameObj, levelLayer);
+    this.physics.add.collider(gameObj, edgeLayer);
     
     return {
         gameObj: gameObj,
