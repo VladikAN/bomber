@@ -1,7 +1,7 @@
 var consts = {
     playerSpeed: 48,
     bombTimer: 3000,
-    animFrameRate: 12,
+    animFrameRate: 10,
     spriteFrame: 16,
     spriteOffset: 8,
     screenW: 800,
@@ -28,7 +28,6 @@ var config = {
 
 var game = new Phaser.Game(config);
 
-var map;
 var levelLayer;
 var edgeLayer;
 var cursors;
@@ -36,41 +35,58 @@ var player;
 
 var objects = [];
 
-function preload () {
+function preload() {
     this.load.spritesheet('sprite', './art/sprite.png', { frameWidth: consts.spriteFrame, frameHeight: consts.spriteFrame });
     this.load.tilemapCSV('map', './maps/demo01.csv');
 }
 
-function create () {
+function create() {
     cursors = this.input.keyboard.createCursorKeys();
 
     loadMap = loadMap.bind(this);
-    handleInput = handleInput.bind(this);
-    
-    setupBlast = setupBlast.bind(this);
-    spawnBlast = spawnBlast.bind(this);
-    setupBricks = setupBricks.bind(this);
-    updateTile = updateTile.bind(this);
+    setupAnimations = setupAnimations.bind(this);
+    buildLoopAnimation = buildLoopAnimation.bind(this);
+    buildOnceAnimation = buildOnceAnimation.bind(this);
+
+    updateOnTile = updateOnTile.bind(this);
     destroyBricks = destroyBricks.bind(this);
-    setupBomb = setupBomb.bind(this);
+    spawnBlast = spawnBlast.bind(this);
     spawnBomb = spawnBomb.bind(this);
-    setupPlayer = setupPlayer.bind(this);
     spawnPlayer = spawnPlayer.bind(this);
 
+    handleInput = handleInput.bind(this);
     alignToWorld = alignToWorld.bind(this);
 
-    setupBlast();
-    setupBomb();
-    setupBricks();
-    setupPlayer();
-
+    setupAnimations();
     loadMap();
 
     player = spawnPlayer(1, 1);
 }
 
+function setupAnimations() {
+    // Blast
+    this.anims.create(buildOnceAnimation('blast-emitter', [42, 43, 44, 45, 46]));
+    this.anims.create(buildOnceAnimation('blast-wave', [35, 36, 37, 38, 46]));
+    this.anims.create(buildOnceAnimation('blast-edge', [28, 29, 30, 31, 46]));
+
+    // Bricks
+    this.anims.create(buildOnceAnimation('brick-idle', [50]));
+    this.anims.create(buildOnceAnimation('brick-destroy', [50, 51, 52, 53, 54, 55]));
+
+    // Bomb
+    this.anims.create(buildLoopAnimation('bomb', [21, 21, 21, 22, 22]));
+
+    // Player
+    this.anims.create(buildOnceAnimation('player-idle', [4]));
+    this.anims.create(buildLoopAnimation('player-left', [0, 1, 2]));
+    this.anims.create(buildLoopAnimation('player-right', [7, 8, 9]));
+    this.anims.create(buildLoopAnimation('player-up', [10, 11, 12]));
+    this.anims.create(buildLoopAnimation('player-down', [3, 4, 5]));
+    this.anims.create(buildOnceAnimation('player-death', [14, 15, 16, 17, 18]));
+}
+
 function loadMap() {
-    map = this.add.tilemap('map', consts.spriteFrame, consts.spriteFrame);
+    var map = this.add.tilemap('map', consts.spriteFrame, consts.spriteFrame);
     var tileset = map.addTilesetImage('sprite');
 
     // Create level from csv
@@ -87,7 +103,6 @@ function loadMap() {
 }
 
 function update() {
-    //drawDebug();
     handleInput();
 }
 
@@ -127,24 +142,6 @@ function handleInput() {
     }
 }
 
-function setupBlast() {
-    this.anims.create({
-        key: 'blast-emitter',
-        frames: this.anims.generateFrameNumbers('sprite', { frames: [42, 43, 44, 45, 46] }),
-        frameRate: consts.animFrameRate
-    });
-    this.anims.create({
-        key: 'blast-wave',
-        frames: this.anims.generateFrameNumbers('sprite', { frames: [35, 36, 37, 38, 46] }),
-        frameRate: consts.animFrameRate
-    });
-    this.anims.create({
-        key: 'blast-edge',
-        frames: this.anims.generateFrameNumbers('sprite', { frames: [28, 29, 30, 31, 46] }),
-        frameRate: consts.animFrameRate
-    });
-}
-
 function spawnBlast(x, y, s) {
     // Put blast emitter
     var gameObj = this.physics.add.sprite(
@@ -176,7 +173,7 @@ function spawnBlast(x, y, s) {
             }
 
             // Locate player and bombs
-            updateTile(tile);
+            updateOnTile(tile);
 
             // Spawn blast wave
             var waveObj = this.physics.add.sprite(gameObj.x + offset.x, gameObj.y + offset.y, 'sprite');
@@ -194,7 +191,7 @@ function spawnBlast(x, y, s) {
     return { gameObj: gameObj };
 }
 
-function updateTile(tile) {
+function updateOnTile(tile) {
     // Find players in range of tile. +1 because layer is shifted
     var p = findPlayer(tile.x + 1, tile.y + 1);
     if (p) {
@@ -223,30 +220,6 @@ function destroyBricks(tile) {
         'sprite');
     gameObj.play('brick-destroy');
     gameObj.once('animationcomplete', () => { gameObj.destroy() });
-}
-
-function setupBricks() {
-    this.anims.create({
-        key: 'brick-idle',
-        frames: this.anims.generateFrameNumbers('sprite', { frames: [50] }),
-        repeat: 0
-    });
-
-    this.anims.create({
-        key: 'brick-destroy',
-        frames: this.anims.generateFrameNumbers('sprite', { frames: [50, 51, 52, 53, 54, 55] }),
-        frameRate: consts.animFrameRate,
-        repeat: 0
-    });
-}
-
-function setupBomb() {
-    this.anims.create({
-        key: 'bomb',
-        frames: this.anims.generateFrameNumbers('sprite', { frames: [21, 21, 21, 22, 22] }),
-        frameRate: consts.animFrameRate,
-        repeat: -1
-    });
 }
 
 function spawnBomb(x, y, s) {
@@ -280,44 +253,6 @@ function spawnBomb(x, y, s) {
     return bomb;
 }
 
-function setupPlayer() {
-    this.anims.create({
-        key: 'player-idle',
-        frames: this.anims.generateFrameNumbers('sprite', { frames: [4] }),
-        repeat: 0
-    });
-    this.anims.create({
-        key: 'player-left',
-        frames: this.anims.generateFrameNumbers('sprite', { frames: [0, 1, 2] }),
-        frameRate: consts.animFrameRate,
-        repeat: -1
-    });
-    this.anims.create({
-        key: 'player-right',
-        frames: this.anims.generateFrameNumbers('sprite', { frames: [7, 8, 9] }),
-        frameRate: consts.animFrameRate,
-        repeat: -1
-    });
-    this.anims.create({
-        key: 'player-up',
-        frames: this.anims.generateFrameNumbers('sprite', { frames: [10, 11, 12] }),
-        frameRate: consts.animFrameRate,
-        repeat: -1
-    });
-    this.anims.create({
-        key: 'player-down',
-        frames: this.anims.generateFrameNumbers('sprite', { frames: [3, 4, 5] }),
-        frameRate: consts.animFrameRate,
-        repeat: -1
-    });
-    this.anims.create({
-        key: 'player-death',
-        frames: this.anims.generateFrameNumbers('sprite', { frames: [14, 15, 16, 17, 18] }),
-        frameRate: consts.animFrameRate,
-        repeat: 0
-    });
-}
-
 function spawnPlayer(x, y) {
     // Draw player
     var gameObj = this.physics.add.sprite(
@@ -341,22 +276,37 @@ function spawnPlayer(x, y) {
         bombsCount: 3,
         bombs: [],
         left: function() {
+            if (this.dead) {
+                return;
+            }
             gameObj.setVelocityX(-consts.playerSpeed);
             gameObj.anims.play('player-left', true);
         },
         right: function() {
+            if (this.dead) {
+                return;
+            }
             gameObj.setVelocityX(consts.playerSpeed);
             gameObj.anims.play('player-right', true);
         },
         up: function() {
+            if (this.dead) {
+                return;
+            }
             gameObj.setVelocityY(-consts.playerSpeed);
             gameObj.anims.play('player-up', true);
         },
         down: function() {
+            if (this.dead) {
+                return;
+            }
             gameObj.setVelocityY(consts.playerSpeed);
             gameObj.anims.play('player-down', true);
         },
         idle: function() {
+            if (this.dead) {
+                return;
+            }
             gameObj.anims.play('player-idle', true);
         },
         die: function() {
@@ -425,4 +375,22 @@ function findBomb(x, y) {
 
 function alignToWorld(x, y) {
     return { x: Math.floor(x / consts.spriteFrame), y: Math.floor(y / consts.spriteFrame) };
+}
+
+function buildLoopAnimation(name, frames) {
+    return {
+        key: name,
+        frames: this.anims.generateFrameNumbers('sprite', { frames: frames }),
+        frameRate: consts.animFrameRate,
+        repeat: -1
+    }
+}
+
+function buildOnceAnimation(name, frames) {
+    return {
+        key: name,
+        frames: this.anims.generateFrameNumbers('sprite', { frames: frames }),
+        frameRate: consts.animFrameRate,
+        repeat: 0
+    }
 }
