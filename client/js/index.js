@@ -32,8 +32,9 @@ var map;
 var levelLayer;
 var edgeLayer;
 var cursors;
-var debugGraphics;
 var player;
+
+var objects = [];
 
 function preload () {
     this.load.spritesheet('sprite', './art/sprite.png', { frameWidth: consts.spriteFrame, frameHeight: consts.spriteFrame });
@@ -42,7 +43,6 @@ function preload () {
 
 function create () {
     cursors = this.input.keyboard.createCursorKeys();
-    debugGraphics = this.add.graphics(); // tmp
 
     loadMap = loadMap.bind(this);
     handleInput = handleInput.bind(this);
@@ -50,6 +50,7 @@ function create () {
     setupBlast = setupBlast.bind(this);
     spawnBlast = spawnBlast.bind(this);
     setupBricks = setupBricks.bind(this);
+    updateTile = updateTile.bind(this);
     destroyBricks = destroyBricks.bind(this);
     setupBomb = setupBomb.bind(this);
     spawnBomb = spawnBomb.bind(this);
@@ -57,7 +58,6 @@ function create () {
     spawnPlayer = spawnPlayer.bind(this);
 
     alignToWorld = alignToWorld.bind(this);
-    drawDebug = drawDebug.bind(this);
 
     setupBlast();
     setupBomb();
@@ -84,16 +84,6 @@ function loadMap() {
     edgeLayer.fill(tiles.wall, 0, map.height + 1, map.width + 2, 1);
     edgeLayer.fill(tiles.wall, 0, 0, 1, map.height + 2);
     edgeLayer.fill(tiles.wall, map.width + 1, 0, 1, map.height + 2);
-}
-
-function drawDebug() {
-    debugGraphics.clear();
-
-    levelLayer.renderDebug(debugGraphics, {
-        tileColor: new Phaser.Display.Color(0, 200, 0, 200),
-        collidingTileColor: new Phaser.Display.Color(200, 0, 0, 200),
-        faceColor: new Phaser.Display.Color(0, 0, 200, 200)
-    });
 }
 
 function update() {
@@ -162,6 +152,7 @@ function spawnBlast(x, y, s) {
         y * consts.spriteFrame + consts.spriteOffset,
         'sprite');
     gameObj.play('blast-emitter');
+    gameObj.setDepth(2);
     gameObj.once('animationcomplete', () => { gameObj.destroy() });
 
     // Four directions to observe
@@ -174,7 +165,7 @@ function spawnBlast(x, y, s) {
 
     // Put blast waves in four directions
     for (var d = 0; d < obs.length; d++) {
-        for (var i = 1; i <= s; i++) {
+        for (var i = 0; i <= s; i++) {
             var offset = { x: obs[d].x * i, y: obs[d].y * i };
             
             // Remember brick wall for later destruction
@@ -185,6 +176,7 @@ function spawnBlast(x, y, s) {
             }
 
             // Locate player and bombs
+            updateTile(tile);
 
             // Spawn blast wave
             var waveObj = this.physics.add.sprite(gameObj.x + offset.x, gameObj.y + offset.y, 'sprite');
@@ -200,6 +192,19 @@ function spawnBlast(x, y, s) {
     }
 
     return { gameObj: gameObj };
+}
+
+function updateTile(tile) {
+    // Find players in range of tile. +1 because layer is shifted
+    var p = findPlayer(tile.x + 1, tile.y + 1);
+    if (p) {
+        p.die();
+    }
+    // Find bombs in range of tile. +1 because layer is shifted
+    var b = findBomb(tile.x + 1, tile.y + 1);
+    if (b) {
+        b.boom();
+    }
 }
 
 function destroyBricks(tile) {
@@ -253,13 +258,16 @@ function spawnBomb(x, y, s) {
     gameObj.play('bomb');
 
     var bomb = {
+        type: 'bomb',
         gameObj: gameObj,
         power: s,
         destroyed: false,
         boom: function() {
+            if (this.destroyed) {
+                return;
+            }
             this.destroyed = true;
             gameObj.setActive(false).setVisible(false);
-
             var crd = alignToWorld(gameObj.x, gameObj.y);
             spawnBlast(crd.x, crd.y, this.power);
         }
@@ -267,6 +275,8 @@ function spawnBomb(x, y, s) {
 
     // Bomb timer out
     this.time.delayedCall(consts.bombTimer, function(b) { b.boom(); }, [bomb], this);
+
+    objects.push(bomb);
     return bomb;
 }
 
@@ -323,7 +333,9 @@ function spawnPlayer(x, y) {
     this.physics.add.collider(gameObj, levelLayer);
     this.physics.add.collider(gameObj, edgeLayer);
     
-    return {
+    var result = {
+        type: 'player',
+        dead: false,
         gameObj: gameObj,
         power: 2,
         bombsCount: 3,
@@ -348,6 +360,10 @@ function spawnPlayer(x, y) {
             gameObj.anims.play('player-idle', true);
         },
         die: function() {
+            if (this.dead) {
+                return;
+            }
+            this.dead = true;
             gameObj.anims.play('player-death', true);
             gameObj.once('animationcomplete', () => { gameObj.setActive(false).setVisible(false); });
         },
@@ -369,15 +385,44 @@ function spawnPlayer(x, y) {
                 return;
             }
             var crd = alignToWorld(gameObj.x, gameObj.y);
+            if (findBomb(crd.x, crd.y)) {
+                return;
+            }
             var bomb = spawnBomb(crd.x, crd.y, this.power);
             this.bombs.push(bomb);
         }
     };
+
+    objects.push(result);
+    return result;
+}
+
+function findPlayer(x, y) {
+    for (var i = 0; i < objects.length; i++) {
+        if (objects[i].type != 'player' || objects[i].dead) {
+            continue;
+        }
+        var crd = alignToWorld(objects[i].gameObj.x, objects[i].gameObj.y);
+        if (crd.x == x && crd.y == y) {
+            return objects[i];
+        }
+    }
+    return null;
+}
+
+function findBomb(x, y) {
+    for (var i = 0; i < objects.length; i++) {
+        if (objects[i].type != 'bomb' || objects[i].destroyed) {
+            continue;
+        }
+        var crd = alignToWorld(objects[i].gameObj.x, objects[i].gameObj.y);
+        if (crd.x == x  && crd.y == y ) {
+            return objects[i];
+        }
+    }
+    return null;
 }
 
 function alignToWorld(x, y) {
-    return {
-        x: Math.floor(x / consts.spriteFrame),
-        y: Math.floor(y / consts.spriteFrame)
-    };
+    return { x: Math.floor(x / consts.spriteFrame), y: Math.floor(y / consts.spriteFrame) };
 }
