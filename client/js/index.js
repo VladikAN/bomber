@@ -1,7 +1,8 @@
 var consts = {
     playerSpeed: 48,
     bombTimer: 3000,
-    animFrameRate: 10,
+    respawnTimer: 2000,
+    animFrameRate: 12,
     spriteFrame: 16,
     spriteOffset: 8,
     screenW: 800,
@@ -33,6 +34,7 @@ var edgeLayer;
 var cursors;
 var player;
 
+var spawns = [];
 var objects = [];
 
 function preload() {
@@ -53,14 +55,14 @@ function create() {
     spawnBlast = spawnBlast.bind(this);
     spawnBomb = spawnBomb.bind(this);
     spawnPlayer = spawnPlayer.bind(this);
+    respawnPlayer = respawnPlayer.bind(this);
 
     handleInput = handleInput.bind(this);
     alignToWorld = alignToWorld.bind(this);
 
     setupAnimations();
     loadMap();
-
-    player = spawnPlayer(1, 1);
+    respawnPlayer();
 }
 
 function setupAnimations() {
@@ -88,6 +90,16 @@ function setupAnimations() {
 function loadMap() {
     var map = this.add.tilemap('map', consts.spriteFrame, consts.spriteFrame);
     var tileset = map.addTilesetImage('sprite');
+
+    // Put default spawns
+    spawns[0] = { x: 1, y: 1};
+    spawns[1] = { x: map.width, y: 1};
+    spawns[2] = { x: map.width, y: map.height};
+    spawns[3] = { x: 1, y: map.height};
+
+    // Put everything to the center
+    this.cameras.main.setZoom(1);
+    this.cameras.main.centerOn(map.widthInPixels / 2, map.heightInPixels / 2);
 
     // Create level from csv
     levelLayer = map.createLayer(0, tileset, consts.spriteFrame, consts.spriteFrame);
@@ -211,7 +223,7 @@ function destroyBricks(tile) {
 
     // Swap tile and remove collision
     tile.setCollision(false);
-    tile.index = 56;
+    tile.index = tiles.free;
 
     // Spawn animated brick wall
     var gameObj = this.physics.add.sprite(
@@ -268,6 +280,8 @@ function spawnPlayer(x, y) {
     this.physics.add.collider(gameObj, levelLayer);
     this.physics.add.collider(gameObj, edgeLayer);
     
+    var time = this.time;
+
     var result = {
         type: 'player',
         dead: false,
@@ -309,6 +323,13 @@ function spawnPlayer(x, y) {
             }
             gameObj.anims.play('player-idle', true);
         },
+        spawn: function(x, y) {
+            gameObj.x = x * consts.spriteFrame + consts.spriteOffset;
+            gameObj.y = y * consts.spriteFrame + consts.spriteOffset;
+            gameObj.setActive(true).setVisible(true);
+            gameObj.anims.play('player-idle', true);
+            this.dead = false;
+        },
         die: function() {
             if (this.dead) {
                 return;
@@ -316,6 +337,7 @@ function spawnPlayer(x, y) {
             this.dead = true;
             gameObj.anims.play('player-death', true);
             gameObj.once('animationcomplete', () => { gameObj.setActive(false).setVisible(false); });
+            time.delayedCall(consts.respawnTimer, function() { respawnPlayer(); }, [], this);
         },
         hasBombs: function() {
             var state = [];
@@ -392,5 +414,14 @@ function buildOnceAnimation(name, frames) {
         frames: this.anims.generateFrameNumbers('sprite', { frames: frames }),
         frameRate: consts.animFrameRate,
         repeat: 0
+    }
+}
+
+function respawnPlayer() {
+    var loc = spawns[Phaser.Math.Between(0, spawns.length - 1)];
+    if (player) {
+        player.spawn(loc.x, loc.y);
+    } else {
+        player = spawnPlayer(loc.x, loc.y);
     }
 }
