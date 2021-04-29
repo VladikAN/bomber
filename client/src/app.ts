@@ -1,3 +1,5 @@
+import "phaser";
+
 var consts = {
     playerSpeed: 48,
     bombTimer: 3000,
@@ -15,7 +17,7 @@ var tiles = {
     brick: 50
 };
 
-var config = {
+const config = {
     type: Phaser.AUTO,
     width: consts.screenW,
     height: consts.screenH,
@@ -44,21 +46,6 @@ function preload() {
 
 function create() {
     cursors = this.input.keyboard.createCursorKeys();
-
-    loadMap = loadMap.bind(this);
-    setupAnimations = setupAnimations.bind(this);
-    buildLoopAnimation = buildLoopAnimation.bind(this);
-    buildOnceAnimation = buildOnceAnimation.bind(this);
-
-    updateOnTile = updateOnTile.bind(this);
-    destroyBricks = destroyBricks.bind(this);
-    spawnBlast = spawnBlast.bind(this);
-    spawnBomb = spawnBomb.bind(this);
-    spawnPlayer = spawnPlayer.bind(this);
-    respawnPlayer = respawnPlayer.bind(this);
-
-    handleInput = handleInput.bind(this);
-    alignToWorld = alignToWorld.bind(this);
 
     setupAnimations();
     loadMap();
@@ -400,21 +387,11 @@ function alignToWorld(x, y) {
 }
 
 function buildLoopAnimation(name, frames) {
-    return {
-        key: name,
-        frames: this.anims.generateFrameNumbers('sprite', { frames: frames }),
-        frameRate: consts.animFrameRate,
-        repeat: -1
-    }
+    return { key: name, frames: this.anims.generateFrameNumbers('sprite', { frames: frames }), frameRate: consts.animFrameRate, repeat: -1 };
 }
 
 function buildOnceAnimation(name, frames) {
-    return {
-        key: name,
-        frames: this.anims.generateFrameNumbers('sprite', { frames: frames }),
-        frameRate: consts.animFrameRate,
-        repeat: 0
-    }
+    return { key: name, frames: this.anims.generateFrameNumbers('sprite', { frames: frames }), frameRate: consts.animFrameRate, repeat: 0 };
 }
 
 function respawnPlayer() {

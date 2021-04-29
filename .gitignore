@@ -1,3 +1,4 @@
 # client
 node_modules/
+client/wwwroot/js/app.js
 package-lock.json

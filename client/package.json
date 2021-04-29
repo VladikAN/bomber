@@ -4,13 +4,18 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "connect": "grunt connect"
+    "build": "webpack",
+    "dev": "concurrently \"webpack --watch\" \"live-server --port=8000 --root=/wwwroot\""
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "grunt": "^1.3.0",
-    "grunt-contrib-connect": "^3.0.0",
-    "phaser": "^3.54.0"
+    "concurrently": "^6.0.2",
+    "live-server": "^1.2.1",
+    "phaser": "^3.54.0",
+    "ts-loader": "^9.1.1",
+    "typescript": "^4.2.4",
+    "webpack": "^5.36.1",
+    "webpack-cli": "^4.6.0"
   }
 }
