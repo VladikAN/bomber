@@ -1,11 +1,11 @@
-import { Consts } from "./consts";
-import { BaseObj, Bomb, Player, Point } from "./types";
+import { Consts } from './consts';
+import { BaseObj, Bomb, Player, Point } from './types';
 
 const objects: BaseObj[] = [];
 
-export const pushObject = (obj: BaseObj) => {
+export const pushObject = (obj: BaseObj): void => {
     objects.push(obj);
-}
+};
 
 export const findPlayer = (x: number, y: number): Player => {
     const players = objects.filter((obj) => obj.type == 'player' && !obj.isDead);
@@ -15,7 +15,7 @@ export const findPlayer = (x: number, y: number): Player => {
     });
 
     return player != null ? <Player>player : null;
-}
+};
 
 export const findBomb = (x: number, y: number): Bomb => {
     const bombs = objects.filter((obj) => obj.type == 'bomb' && !obj.isDead);
@@ -25,8 +25,8 @@ export const findBomb = (x: number, y: number): Bomb => {
     });
 
     return bomb != null ? <Bomb>bomb : null;
-}
+};
 
 export const alignToWorld = (x: number, y: number): Point => {
     return { x: Math.floor(x / Consts.spriteFrame), y: Math.floor(y / Consts.spriteFrame) };
-}
+};

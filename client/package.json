@@ -5,12 +5,17 @@
   "main": "index.js",
   "scripts": {
     "build": "webpack",
-    "dev": "concurrently \"webpack --watch\" \"live-server --port=8080 wwwroot/ \""
+    "dev": "concurrently \"webpack --watch\" \"live-server --port=8080 wwwroot/ \"",
+    "lint": "eslint --ext ts src/",
+    "lint:fix": "npm run lint -- --fix"
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^4.22.0",
+    "@typescript-eslint/parser": "^4.22.0",
     "concurrently": "^6.0.2",
+    "eslint": "^7.25.0",
     "live-server": "^1.2.1",
     "phaser": "^3.54.0",
     "ts-loader": "^9.1.1",

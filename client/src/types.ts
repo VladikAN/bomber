@@ -1,7 +1,7 @@
-import { Scene, Time } from "phaser";
-import { Consts, Tiles } from "./consts";
-import { GameScene } from "./gameScene";
-import { alignToWorld, findBomb, findPlayer, pushObject } from "./utils";
+import { Scene, Time } from 'phaser';
+import { Consts, Tiles } from './consts';
+import { GameScene } from './gameScene';
+import { alignToWorld, findBomb, findPlayer, pushObject } from './utils';
 
 export class Point {
     x: number;
@@ -11,7 +11,7 @@ export class Point {
 export class BaseObj {
     scene: GameScene;
     type: string;
-    isDead: boolean = false;
+    isDead = false;
     gameObj: Phaser.Physics.Arcade.Sprite = null;
 
     constructor(scene: GameScene, type: string) {
@@ -21,8 +21,8 @@ export class BaseObj {
 }
 
 export class Player extends BaseObj {
-    power: number = 1;
-    bombsCount: number = 1;
+    power = 1;
+    bombsCount = 1;
     bombs: Bomb[] = [];
     time: Time.Clock;
 
@@ -30,7 +30,7 @@ export class Player extends BaseObj {
         super(scene, 'player');
 
         // Draw player
-        let gameObj = scene.physics.add.sprite(
+        const gameObj = scene.physics.add.sprite(
             x * Consts.spriteFrame + Consts.spriteOffset,
             y * Consts.spriteFrame + Consts.spriteOffset,
             'sprite');
@@ -48,15 +48,15 @@ export class Player extends BaseObj {
         pushObject(this);
     }
 
-    left = () => {
+    left = (): void => {
         if (this.isDead) {
             return;
         }
         this.gameObj.setVelocityX(-Consts.playerSpeed);
         this.gameObj.anims.play('player-left', true);
-    }
+    };
 
-    right = () => {
+    right = (): void => {
         if (this.isDead) {
             return;
         }
@@ -64,38 +64,38 @@ export class Player extends BaseObj {
         this.gameObj.anims.play('player-right', true);
     };
 
-    up = () => {
+    up = (): void => {
         if (this.isDead) {
             return;
         }
         this.gameObj.setVelocityY(-Consts.playerSpeed);
         this.gameObj.anims.play('player-up', true);
-    }
+    };
 
-    down = () => {
+    down = (): void => {
         if (this.isDead) {
             return;
         }
         this.gameObj.setVelocityY(Consts.playerSpeed);
         this.gameObj.anims.play('player-down', true);
-    }
+    };
 
-    idle = () => {
+    idle = (): void => {
         if (this.isDead) {
             return;
         }
         this.gameObj.anims.play('player-idle', true);
-    }
+    };
 
-    spawn = (x: number, y: number) => {
+    spawn = (x: number, y: number): void => {
         this.gameObj.x = x * Consts.spriteFrame + Consts.spriteOffset;
         this.gameObj.y = y * Consts.spriteFrame + Consts.spriteOffset;
         this.gameObj.setActive(true).setVisible(true);
         this.gameObj.anims.play('player-idle', true);
         this.isDead = false;
-    }
+    };
 
-    die = () => {
+    die = (): void => {
         if (this.isDead) {
             return;
         }
@@ -103,11 +103,11 @@ export class Player extends BaseObj {
         this.gameObj.anims.play('player-death', true);
         this.gameObj.once('animationcomplete', () => { this.gameObj.setActive(false).setVisible(false); });
         this.time.delayedCall(Consts.respawnTimer, function() { this.scene.respawnPlayer(); }, [], this);
-    }
+    };
 
     hasBombs = (): boolean => {
         const state: Bomb[] = [];
-        for (var i = 0; i < this.bombs.length; i++) {
+        for (let i = 0; i < this.bombs.length; i++) {
             if (!this.bombs[i].isDead) {
                 state.push(this.bombs[i]);
             } else {
@@ -117,19 +117,19 @@ export class Player extends BaseObj {
         }
         this.bombs = state;
         return this.bombs.length < this.bombsCount;
-    }
+    };
 
-    placeBomb = () => {
+    placeBomb = (): void => {
         if (!this.hasBombs()) {
             return;
         }
-        var crd = alignToWorld(this.gameObj.x, this.gameObj.y);
+        const crd = alignToWorld(this.gameObj.x, this.gameObj.y);
         if (findBomb(crd.x, crd.y)) {
             return;
         }
         const bomb = new Bomb(this.scene, crd.x, crd.y, this.power);
         this.bombs.push(bomb);
-    }
+    };
 }
 
 export class Bomb extends BaseObj {
@@ -139,7 +139,7 @@ export class Bomb extends BaseObj {
         super(scene, 'bomb');
 
         // Draw bomb
-        let gameObj = scene.physics.add.sprite(
+        const gameObj = scene.physics.add.sprite(
             x * Consts.spriteFrame + Consts.spriteOffset,
             y * Consts.spriteFrame + Consts.spriteOffset,
             'sprite');
@@ -153,18 +153,18 @@ export class Bomb extends BaseObj {
         pushObject(this);
     }
 
-    boom = () => {
+    boom = (): void => {
         if (this.isDead) {
             return;
         }
         this.isDead = true;
         this.gameObj.setActive(false).setVisible(false);
-        var crd = alignToWorld(this.gameObj.x, this.gameObj.y);
+        const crd = alignToWorld(this.gameObj.x, this.gameObj.y);
         spawnBlast(this.scene, crd.x, crd.y, this.power);
-    }
+    };
 }
 
-const spawnBlast = (scene: GameScene, x: number, y: number, power: number) => {
+const spawnBlast = (scene: GameScene, x: number, y: number, power: number): void => {
     // Put blast emitter
     const gameObj = scene.physics.add.sprite(
         x * Consts.spriteFrame + Consts.spriteOffset,
@@ -172,7 +172,7 @@ const spawnBlast = (scene: GameScene, x: number, y: number, power: number) => {
         'sprite');
     gameObj.play('blast-emitter');
     gameObj.setDepth(2);
-    gameObj.once('animationcomplete', () => { gameObj.destroy() });
+    gameObj.once('animationcomplete', () => { gameObj.destroy(); });
 
     // Four directions to observe
     const observe = [{ x: 0, y: -Consts.spriteFrame, n: 0 },
@@ -187,7 +187,7 @@ const spawnBlast = (scene: GameScene, x: number, y: number, power: number) => {
     for (let direction = 0; direction < observe.length; direction++) {
         for (let range = 0; range <= power; range++) {
             const offset = { x: observe[direction].x * range, y: observe[direction].y * range };
-            
+
             // Remember brick wall for later destruction
             const tile = layer.getTileAtWorldXY(gameObj.x + offset.x, gameObj.y + offset.y, true);
             if (!tile || tile.index != Tiles.free) {
@@ -202,32 +202,30 @@ const spawnBlast = (scene: GameScene, x: number, y: number, power: number) => {
             const waveObj = scene.physics.add.sprite(gameObj.x + offset.x, gameObj.y + offset.y, 'sprite');
             waveObj.angle = 90 * observe[direction].n;
             waveObj.play(range == power ? 'blast-edge' : 'blast-wave');
-            waveObj.once('animationcomplete', () => { waveObj.destroy() });
+            waveObj.once('animationcomplete', () => { waveObj.destroy(); });
         }
     }
 
     // Destroy brick walls
-    for (var range = 0; range < bricks.length; range++) {
+    for (let range = 0; range < bricks.length; range++) {
         destroyBricks(bricks[range]);
     }
+};
 
-    return { gameObj: gameObj };
-}
-
-const updateOnTile = (tile: Phaser.Tilemaps.Tile) => {
+const updateOnTile = (tile: Phaser.Tilemaps.Tile): void => {
     // Find players in range of tile. +1 because layer is shifted
-    var p = findPlayer(tile.x + 1, tile.y + 1);
+    const p = findPlayer(tile.x + 1, tile.y + 1);
     if (p) {
         p.die();
     }
     // Find bombs in range of tile. +1 because layer is shifted
-    var b = findBomb(tile.x + 1, tile.y + 1);
+    const b = findBomb(tile.x + 1, tile.y + 1);
     if (b) {
         b.boom();
     }
-}
+};
 
-const destroyBricks = (tile: Phaser.Tilemaps.Tile) => {
+const destroyBricks = (tile: Phaser.Tilemaps.Tile): void => {
     if (!tile || tile.index != Tiles.brick) {
         return;
     }
@@ -239,10 +237,10 @@ const destroyBricks = (tile: Phaser.Tilemaps.Tile) => {
     tile.index = Tiles.free;
 
     // Spawn animated brick wall
-    var gameObj = scene.physics.add.sprite(
+    const gameObj = scene.physics.add.sprite(
         (tile.x + 1) * Consts.spriteFrame + Consts.spriteOffset,
         (tile.y + 1) * Consts.spriteFrame + Consts.spriteOffset,
         'sprite');
     gameObj.play('brick-destroy');
-    gameObj.once('animationcomplete', () => { gameObj.destroy() });
-}
+    gameObj.once('animationcomplete', () => { gameObj.destroy(); });
+};

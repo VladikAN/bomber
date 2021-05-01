@@ -1,6 +1,6 @@
-import "phaser";
-import { Consts } from "./consts";
-import { GameScene } from "./gameScene";
+import 'phaser';
+import { Consts } from './consts';
+import { GameScene } from './gameScene';
 
 
 const config: Phaser.Types.Core.GameConfig = {
@@ -17,4 +17,4 @@ export class BomberManGame extends Phaser.Game {
     }
 }
 
-window.onload = () => { var game = new BomberManGame(config); };
+window.onload = (): void => { new BomberManGame(config); };

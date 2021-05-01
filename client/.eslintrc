@@ -1,0 +1,34 @@
+{
+    "parser": "@typescript-eslint/parser",
+    "extends": [
+        "plugin:@typescript-eslint/recommended"
+    ],
+    "parserOptions": {
+        "ecmaVersion": 2018,
+        "sourceType": "module",
+        "ecmaFeatures": {
+            "jsx": true
+        }
+    },
+    "rules": {
+        "@typescript-eslint/no-unused-vars": "warn",
+        "@typescript-eslint/no-empty-interface": "off",
+        "@typescript-eslint/type-annotation-spacing": "warn",
+        "@typescript-eslint/explicit-function-return-type": "warn",
+        "@typescript-eslint/semi": "warn",
+        "curly": ["error", "all"],
+        "no-duplicate-imports": "warn",
+        "no-irregular-whitespace": "warn",
+        "no-mixed-spaces-and-tabs": "warn",
+        "no-multi-spaces": "warn",
+        "no-useless-rename": "warn",
+        "no-trailing-spaces": "warn",
+        "semi": "off",
+        "quotes": ["warn", "single"]
+    },
+    "settings": {
+        "react": {
+            "version": "detect"
+        }
+    }
+}
