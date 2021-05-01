@@ -1,5 +1,5 @@
-import { Game, Scene, Time } from "phaser";
-import { Consts, Tiles } from "./configs";
+import { Scene, Time } from "phaser";
+import { Consts, Tiles } from "./consts";
 import { GameScene } from "./gameScene";
 import { alignToWorld, findBomb, findPlayer, pushObject } from "./utils";
 
@@ -30,18 +30,19 @@ export class Player extends BaseObj {
         super(scene, 'player');
 
         // Draw player
-        this.gameObj = scene.physics.add.sprite(
+        let gameObj = scene.physics.add.sprite(
             x * Consts.spriteFrame + Consts.spriteOffset,
             y * Consts.spriteFrame + Consts.spriteOffset,
             'sprite');
-        this.gameObj.setDepth(1); // put on top of others
-        this.gameObj.play('player-idle');
+        gameObj.setDepth(1); // put on top of others
+        gameObj.play('player-idle');
 
         // Setup physics
-        this.gameObj.setCollideWorldBounds(true);
-        this.gameObj.setSize(Consts.spriteFrame * .5, Consts.spriteFrame * .8);
-        this.scene.physics.add.collider(this.gameObj, scene.layers);
+        gameObj.setCollideWorldBounds(true);
+        gameObj.setSize(Consts.spriteFrame * .5, Consts.spriteFrame * .8);
+        this.scene.physics.add.collider(gameObj, scene.layers);
 
+        this.gameObj = gameObj;
         this.time = scene.time;
 
         pushObject(this);
@@ -138,15 +139,16 @@ export class Bomb extends BaseObj {
         super(scene, 'bomb');
 
         // Draw bomb
-        this.gameObj = scene.physics.add.sprite(
+        let gameObj = scene.physics.add.sprite(
             x * Consts.spriteFrame + Consts.spriteOffset,
             y * Consts.spriteFrame + Consts.spriteOffset,
             'sprite');
-        this.gameObj.play('bomb');
+        gameObj.play('bomb');
 
         // Bomb timer out
         scene.time.delayedCall(Consts.bombTimer, (b) => { b.boom(); }, [this], this);
 
+        this.gameObj = gameObj;
         this.power = power;
         pushObject(this);
     }

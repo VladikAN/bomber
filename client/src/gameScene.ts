@@ -1,10 +1,11 @@
 import { setupAnimations } from "./animations";
-import { Consts } from "./configs";
+import { Consts } from "./consts";
 import { loadMap } from "./maps";
 import { Player, Point } from "./types";
 
 export class GameScene extends Phaser.Scene {
-    cursors: Phaser.Types.Input.Keyboard.CursorKeys;
+    keys: Phaser.Types.Input.Keyboard.CursorKeys;
+    
     layers: Phaser.Tilemaps.TilemapLayer[];
     spawns: Point[] = [];
     player: Player;
@@ -20,7 +21,7 @@ export class GameScene extends Phaser.Scene {
 
     create(): void {
         // Init engine stuff
-        this.cursors = this.input.keyboard.createCursorKeys();
+        this.keys = this.input.keyboard.createCursorKeys();
 
         // Init game stuff
         setupAnimations(this);
@@ -29,9 +30,9 @@ export class GameScene extends Phaser.Scene {
         // Put default spawns
         const layer = this.layers[0];
         this.spawns[0] = { x: 1, y: 1};
-        this.spawns[1] = { x: layer.width, y: 1};
-        this.spawns[2] = { x: layer.width, y: layer.height};
-        this.spawns[3] = { x: 1, y: layer.height};
+        this.spawns[1] = { x: layer.width / Consts.spriteFrame, y: 1};
+        this.spawns[2] = { x: layer.width / Consts.spriteFrame, y: layer.height / Consts.spriteFrame};
+        this.spawns[3] = { x: 1, y: layer.height / Consts.spriteFrame};
 
         // Start game
         this.respawnPlayer();
@@ -51,12 +52,12 @@ export class GameScene extends Phaser.Scene {
     }
 
     handleInput = () => {
-        var lr = this.cursors.left.isDown || this.cursors.right.isDown;
-        var ud = this.cursors.up.isDown || this.cursors.down.isDown;
+        var lr = this.keys.left.isDown || this.keys.right.isDown;
+        var ud = this.keys.up.isDown || this.keys.down.isDown;
     
         this.player.gameObj.setVelocity(0, 0);
     
-        if (Phaser.Input.Keyboard.JustDown(this.cursors.space)) {
+        if (Phaser.Input.Keyboard.JustDown(this.keys.space)) {
             this.player.placeBomb();
         }
         
@@ -66,9 +67,9 @@ export class GameScene extends Phaser.Scene {
         }
         
         if (lr) {
-            if (this.cursors.left.isDown) {
+            if (this.keys.left.isDown) {
                 this.player.left();
-            } else if (this.cursors.right.isDown) {
+            } else if (this.keys.right.isDown) {
                 this.player.right();
             }
     
@@ -76,9 +77,9 @@ export class GameScene extends Phaser.Scene {
         }
         
         if (ud) {
-            if (this.cursors.up.isDown) {
+            if (this.keys.up.isDown) {
                 this.player.up();
-            } else if (this.cursors.down.isDown) {
+            } else if (this.keys.down.isDown) {
                 this.player.down();
             }
     

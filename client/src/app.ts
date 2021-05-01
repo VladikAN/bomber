@@ -1,5 +1,5 @@
 import "phaser";
-import { Consts } from "./configs";
+import { Consts } from "./consts";
 import { GameScene } from "./gameScene";
 
 

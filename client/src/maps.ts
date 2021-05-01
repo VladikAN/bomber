@@ -1,4 +1,4 @@
-import { Consts, Tiles } from "./configs";
+import { Consts, Tiles } from "./consts";
 
 export const loadMap = (scene: Phaser.Scene): Phaser.Tilemaps.TilemapLayer[] => {
     var map = scene.add.tilemap('map', Consts.spriteFrame, Consts.spriteFrame);

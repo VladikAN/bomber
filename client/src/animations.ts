@@ -1,4 +1,4 @@
-import { Consts } from "./configs";
+import { Consts } from "./consts";
 
 export const setupAnimations = (scene: Phaser.Scene) => {
     // Blast
@@ -26,7 +26,7 @@ const loopAnimation = (scene: Phaser.Scene, name: string, frames: number[]) => {
     return {
         key: name,
         frames: scene.anims.generateFrameNumbers('sprite', { frames: frames }),
-        frameRate: Consts.animFrameRate,
+        frameRate: Consts.animationFrameRate,
         repeat: -1
     };
 }
@@ -35,7 +35,7 @@ const singleAnimation = (scene: Phaser.Scene, name: string, frames: number[]) =>
     return {
         key: name,
         frames: scene.anims.generateFrameNumbers('sprite', { frames: frames }),
-        frameRate: Consts.animFrameRate,
+        frameRate: Consts.animationFrameRate,
         repeat: 0
     };
 }
