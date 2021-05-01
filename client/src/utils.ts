@@ -7,24 +7,24 @@ export const pushObject = (obj: BaseObj): void => {
     objects.push(obj);
 };
 
-export const findPlayer = (x: number, y: number): Player => {
-    const players = objects.filter((obj) => obj.type == 'player' && !obj.isDead);
-    const player = players.find((p) => {
+export const findPlayers = (x: number, y: number): Player[] => {
+    const allPlayers = objects.filter((obj) => obj.type == 'player' && !obj.isDead);
+    const inTile = allPlayers.filter((p) => {
         const crd = alignToWorld(p.gameObj.x, p.gameObj.y);
         return crd.x == x && crd.y == y;
     });
 
-    return player != null ? <Player>player : null;
+    return inTile.map((p) => <Player>p);
 };
 
-export const findBomb = (x: number, y: number): Bomb => {
-    const bombs = objects.filter((obj) => obj.type == 'bomb' && !obj.isDead);
-    const bomb = bombs.find((b) => {
+export const findBombs = (x: number, y: number): Bomb[] => {
+    const allBombs = objects.filter((obj) => obj.type == 'bomb' && !obj.isDead);
+    const inTile = allBombs.filter((b) => {
         const crd = alignToWorld(b.gameObj.x, b.gameObj.y);
         return crd.x == x && crd.y == y;
     });
 
-    return bomb != null ? <Bomb>bomb : null;
+    return inTile.map((b) => <Bomb>b);
 };
 
 export const alignToWorld = (x: number, y: number): Point => {

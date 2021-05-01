@@ -39,7 +39,8 @@ export class GameScene extends Phaser.Scene {
     }
 
     update = (): void => {
-        this.handleInput();
+        // Handle player keyboard input
+        this.handleInput(this.player);
     };
 
     respawnPlayer = (): void => {
@@ -51,26 +52,26 @@ export class GameScene extends Phaser.Scene {
         }
     };
 
-    handleInput = (): void => {
+    handleInput = (unit: Player): void => {
         const lr = this.keys.left.isDown || this.keys.right.isDown;
         const ud = this.keys.up.isDown || this.keys.down.isDown;
 
-        this.player.gameObj.setVelocity(0, 0);
+        unit.gameObj.setVelocity(0, 0);
 
         if (Phaser.Input.Keyboard.JustDown(this.keys.space)) {
-            this.player.placeBomb();
+            unit.placeBomb();
         }
 
         if (!lr && !ud) {
-            this.player.idle();
+            unit.idle();
             return;
         }
 
         if (lr) {
             if (this.keys.left.isDown) {
-                this.player.left();
+                unit.left();
             } else if (this.keys.right.isDown) {
-                this.player.right();
+                unit.right();
             }
 
             return;
@@ -78,9 +79,9 @@ export class GameScene extends Phaser.Scene {
 
         if (ud) {
             if (this.keys.up.isDown) {
-                this.player.up();
+                unit.up();
             } else if (this.keys.down.isDown) {
-                this.player.down();
+                unit.down();
             }
 
             return;

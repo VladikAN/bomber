@@ -1,7 +1,7 @@
 import { Scene, Time } from 'phaser';
 import { Consts, Tiles } from './consts';
 import { GameScene } from './gameScene';
-import { alignToWorld, findBomb, findPlayer, pushObject } from './utils';
+import { alignToWorld, findBombs, findPlayers, pushObject } from './utils';
 
 export class Point {
     x: number;
@@ -34,7 +34,7 @@ export class Player extends BaseObj {
             x * Consts.spriteFrame + Consts.spriteOffset,
             y * Consts.spriteFrame + Consts.spriteOffset,
             'sprite');
-        gameObj.setDepth(1); // put on top of others
+        gameObj.setDepth(10); // put on top of others
         gameObj.play('player-idle');
 
         // Setup physics
@@ -124,7 +124,7 @@ export class Player extends BaseObj {
             return;
         }
         const crd = alignToWorld(this.gameObj.x, this.gameObj.y);
-        if (findBomb(crd.x, crd.y)) {
+        if (findBombs(crd.x, crd.y).length > 0) {
             return;
         }
         const bomb = new Bomb(this.scene, crd.x, crd.y, this.power);
@@ -215,15 +215,12 @@ const spawnBlast = (scene: GameScene, x: number, y: number, power: number): void
 
 const updateOnTile = (tile: Phaser.Tilemaps.Tile): void => {
     // Find players in range of tile. +1 because layer is shifted
-    const p = findPlayer(tile.x + 1, tile.y + 1);
-    if (p) {
-        p.die();
-    }
+    const players = findPlayers(tile.x + 1, tile.y + 1);
+    players.forEach(p => p.die());
+
     // Find bombs in range of tile. +1 because layer is shifted
-    const b = findBomb(tile.x + 1, tile.y + 1);
-    if (b) {
-        b.boom();
-    }
+    const bombs = findBombs(tile.x + 1, tile.y + 1);
+    bombs.forEach((b) => b.boom());
 };
 
 const destroyBricks = (tile: Phaser.Tilemaps.Tile): void => {
