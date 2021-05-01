@@ -39,7 +39,7 @@ export class Player extends BaseObj {
 
         // Setup physics
         gameObj.setCollideWorldBounds(true);
-        gameObj.setSize(Consts.spriteFrame * .5, Consts.spriteFrame * .8);
+        gameObj.setSize(Consts.spriteFrame * .5, Consts.spriteFrame * .5);
         this.scene.physics.add.collider(gameObj, scene.layers);
 
         this.gameObj = gameObj;
@@ -171,7 +171,7 @@ const spawnBlast = (scene: GameScene, x: number, y: number, power: number): void
         y * Consts.spriteFrame + Consts.spriteOffset,
         'sprite');
     gameObj.play('blast-emitter');
-    gameObj.setDepth(2);
+    gameObj.setDepth(5);
     gameObj.once('animationcomplete', () => { gameObj.destroy(); });
 
     // Four directions to observe
@@ -202,6 +202,7 @@ const spawnBlast = (scene: GameScene, x: number, y: number, power: number): void
             const waveObj = scene.physics.add.sprite(gameObj.x + offset.x, gameObj.y + offset.y, 'sprite');
             waveObj.angle = 90 * observe[direction].n;
             waveObj.play(range == power ? 'blast-edge' : 'blast-wave');
+            waveObj.setDepth(range == power ? 4 : 3);
             waveObj.once('animationcomplete', () => { waveObj.destroy(); });
         }
     }

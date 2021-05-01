@@ -1,6 +1,6 @@
 const path = require('path');
 module.exports = {
-  entry: './src/app.ts',
+  entry: './client/src/app.ts',
   module: {
     rules: [
       {
@@ -15,7 +15,7 @@ module.exports = {
   },
   output: {
     filename: 'app.js',
-    path: path.resolve(__dirname, 'wwwroot/js')
+    path: path.resolve(__dirname, 'client/wwwroot/js')
   },
   mode: 'development'
 };
