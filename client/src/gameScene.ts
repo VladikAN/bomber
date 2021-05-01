@@ -15,7 +15,8 @@ export class GameScene extends Phaser.Scene {
     }
 
     preload(): void {
-        this.load.spritesheet('sprite', './art/sprite.png', { frameWidth: Consts.spriteFrame, frameHeight: Consts.spriteFrame });
+        this.load.spritesheet('player', './art/player.png', { frameWidth: Consts.spriteFrame, frameHeight: Consts.spriteFrame });
+        this.load.spritesheet('sprites', './art/sprites.png', { frameWidth: Consts.spriteFrame, frameHeight: Consts.spriteFrame });
         this.load.tilemapCSV('map', './maps/demo01.csv');
     }
 

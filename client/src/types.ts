@@ -24,6 +24,7 @@ export class Player extends BaseObj {
     power = 1;
     bombsCount = 1;
     bombs: Bomb[] = [];
+    color = 'blue';
     time: Time.Clock;
 
     constructor(scene: GameScene, x: number, y: number) {
@@ -35,7 +36,7 @@ export class Player extends BaseObj {
             y * Consts.spriteFrame + Consts.spriteOffset,
             'sprite');
         gameObj.setDepth(10); // put on top of others
-        gameObj.play('player-idle');
+        gameObj.play(`player-idle-${this.color}`);
 
         // Setup physics
         gameObj.setCollideWorldBounds(true);
@@ -53,7 +54,7 @@ export class Player extends BaseObj {
             return;
         }
         this.gameObj.setVelocityX(-Consts.playerSpeed);
-        this.gameObj.anims.play('player-left', true);
+        this.gameObj.anims.play(`player-left-${this.color}`, true);
     };
 
     right = (): void => {
@@ -61,7 +62,7 @@ export class Player extends BaseObj {
             return;
         }
         this.gameObj.setVelocityX(Consts.playerSpeed);
-        this.gameObj.anims.play('player-right', true);
+        this.gameObj.anims.play(`player-right-${this.color}`, true);
     };
 
     up = (): void => {
@@ -69,7 +70,7 @@ export class Player extends BaseObj {
             return;
         }
         this.gameObj.setVelocityY(-Consts.playerSpeed);
-        this.gameObj.anims.play('player-up', true);
+        this.gameObj.anims.play(`player-up-${this.color}`, true);
     };
 
     down = (): void => {
@@ -77,21 +78,21 @@ export class Player extends BaseObj {
             return;
         }
         this.gameObj.setVelocityY(Consts.playerSpeed);
-        this.gameObj.anims.play('player-down', true);
+        this.gameObj.anims.play(`player-down-${this.color}`, true);
     };
 
     idle = (): void => {
         if (this.isDead) {
             return;
         }
-        this.gameObj.anims.play('player-idle', true);
+        this.gameObj.anims.play(`player-idle-${this.color}`, true);
     };
 
     spawn = (x: number, y: number): void => {
         this.gameObj.x = x * Consts.spriteFrame + Consts.spriteOffset;
         this.gameObj.y = y * Consts.spriteFrame + Consts.spriteOffset;
         this.gameObj.setActive(true).setVisible(true);
-        this.gameObj.anims.play('player-idle', true);
+        this.gameObj.anims.play(`player-idle-${this.color}`, true);
         this.isDead = false;
     };
 
@@ -100,7 +101,7 @@ export class Player extends BaseObj {
             return;
         }
         this.isDead = true;
-        this.gameObj.anims.play('player-death', true);
+        this.gameObj.anims.play(`player-death-${this.color}`, true);
         this.gameObj.once('animationcomplete', () => { this.gameObj.setActive(false).setVisible(false); });
         this.time.delayedCall(Consts.respawnTimer, function() { this.scene.respawnPlayer(); }, [], this);
     };

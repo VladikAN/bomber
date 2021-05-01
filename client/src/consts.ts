@@ -10,7 +10,7 @@ export const Consts = {
 };
 
 export const Tiles = {
-    wall: 49,
-    free: 56,
-    brick: 50
+    wall: 1,
+    free: 0,
+    brick: 2
 };

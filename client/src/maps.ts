@@ -2,7 +2,7 @@ import { Consts, Tiles } from './consts';
 
 export const loadMap = (scene: Phaser.Scene): Phaser.Tilemaps.TilemapLayer[] => {
     const map = scene.add.tilemap('map', Consts.spriteFrame, Consts.spriteFrame);
-    const tileset = map.addTilesetImage('sprite');
+    const tileset = map.addTilesetImage('sprites');
 
     // Put everything to the center
     scene.cameras.main.setZoom(1);
