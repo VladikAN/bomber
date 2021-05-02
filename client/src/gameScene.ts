@@ -1,13 +1,13 @@
 import { setupAnimations } from './animations';
 import { Consts } from './consts';
 import { MapLoader } from './maps';
-import { Player, Point } from './types';
+import { Player, Point, PowerUp } from './types';
 
 export class GameScene extends Phaser.Scene {
     keys: Phaser.Types.Input.Keyboard.CursorKeys;
 
     layers: Phaser.Tilemaps.TilemapLayer[] = [];
-    pickups: Phaser.Tilemaps.Tile[] = [];
+    pickups: PowerUp[] = [];
     spawns: Point[] = [];
     player: Player;
 
@@ -31,7 +31,7 @@ export class GameScene extends Phaser.Scene {
         const map = new MapLoader();
         this.layers = map.loadMap(this);
         this.spawns = map.getSpawns();
-        this.pickups = map.getPickups();
+        this.pickups = map.getPickups().map(tile => new PowerUp(this, tile));
 
         // Start game
         this.respawnPlayer();

@@ -1,4 +1,4 @@
-import { Scene, Time } from 'phaser';
+import { Scene } from 'phaser';
 import { Consts, Tiles } from './consts';
 import { GameScene } from './gameScene';
 import { alignToWorld, findBombs, findPlayers, pushObject } from './utils';
@@ -25,7 +25,6 @@ export class Player extends BaseObj {
     bombsCount = 1;
     bombs: Bomb[] = [];
     color = 'blue';
-    time: Time.Clock;
 
     constructor(scene: GameScene, x: number, y: number) {
         super(scene, 'player');
@@ -44,7 +43,6 @@ export class Player extends BaseObj {
         this.scene.physics.add.collider(gameObj, scene.layers);
 
         this.gameObj = gameObj;
-        this.time = scene.time;
 
         pushObject(this);
     }
@@ -105,7 +103,7 @@ export class Player extends BaseObj {
         this.isDead = true;
         this.gameObj.anims.play(`player-death-${this.color}`, true);
         this.gameObj.once('animationcomplete', () => { this.gameObj.setActive(false).setVisible(false); });
-        this.time.delayedCall(Consts.respawnTimer, function() { this.scene.respawnPlayer(); }, [], this);
+        this.scene.time.delayedCall(Consts.respawnTimer, function() { this.scene.respawnPlayer(); }, [], this);
     };
 
     hasBombs = (): boolean => {
@@ -135,27 +133,21 @@ export class Player extends BaseObj {
     };
 
     checkPickups = (): void => {
-        this.scene.physics.world.overlapTiles(
-            this.gameObj,
-            this.scene.pickups,
-            (_, tile) => this._hitPickup(<Phaser.Tilemaps.Tile><unknown>tile),
-            null,
-            this);
+        this.scene.pickups
+            .filter(pickup => !pickup.isDead)
+            .forEach(pickup => {
+                this.scene.physics.world.overlapTiles(this.gameObj, [pickup.tile], () => this._hitPickup(pickup), null, this);
+            });
     };
 
-    private _hitPickup = (tile: Phaser.Tilemaps.Tile): void => {
-        const org = tile.index;
-        tile.index = Tiles.free;
-
-        if (org == Tiles.free) {
-            return;
-        } else if (org == Tiles.powerUp) {
+    private _hitPickup = (pickup: PowerUp): void => {
+        const org = pickup.tile.index;
+        pickup.destroy();
+        if (org == Tiles.powerUp) {
             this._powerUp();
         } else if (org == Tiles.addBomb) {
             this._addBomb();
         }
-
-        this.time.delayedCall(Consts.bonusTimer, function(t, org) { t.index = org; }, [tile, org], this);
     };
 
     private _addBomb = (): void => {
@@ -164,6 +156,34 @@ export class Player extends BaseObj {
 
     private _powerUp = (): void => {
         this.power = this.power < 3 ? this.power + 1 : this.power;
+    };
+}
+
+export class PowerUp extends BaseObj {
+    tile: Phaser.Tilemaps.Tile;
+
+    constructor(scene: GameScene, tile: Phaser.Tilemaps.Tile) {
+        super(scene, 'powerup');
+        this.tile = tile;
+    }
+
+    destroy = (): void => {
+        const org = this.tile.index;
+        if (this.isDead || org == Tiles.free) {
+            return;
+        }
+
+        this.tile.index = Tiles.free;
+        this.isDead = true;
+
+        this.scene.time.delayedCall(
+            Consts.bonusTimer,
+            (t: PowerUp, org: number) => {
+                t.tile.index = org;
+                t.isDead = false;
+            },
+            [this, org],
+            this);
     };
 }
 
