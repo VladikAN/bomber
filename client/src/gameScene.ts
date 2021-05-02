@@ -1,12 +1,13 @@
 import { setupAnimations } from './animations';
 import { Consts } from './consts';
-import { loadMap } from './maps';
+import { MapLoader } from './maps';
 import { Player, Point } from './types';
 
 export class GameScene extends Phaser.Scene {
     keys: Phaser.Types.Input.Keyboard.CursorKeys;
 
-    layers: Phaser.Tilemaps.TilemapLayer[];
+    layers: Phaser.Tilemaps.TilemapLayer[] = [];
+    pickups: Phaser.Tilemaps.Tile[] = [];
     spawns: Point[] = [];
     player: Player;
 
@@ -26,14 +27,11 @@ export class GameScene extends Phaser.Scene {
 
         // Init game stuff
         setupAnimations(this);
-        this.layers = loadMap(this);
 
-        // Put default spawns
-        const layer = this.layers[0];
-        this.spawns[0] = { x: 1, y: 1};
-        this.spawns[1] = { x: layer.width / Consts.spriteFrame, y: 1};
-        this.spawns[2] = { x: layer.width / Consts.spriteFrame, y: layer.height / Consts.spriteFrame};
-        this.spawns[3] = { x: 1, y: layer.height / Consts.spriteFrame};
+        const map = new MapLoader();
+        this.layers = map.loadMap(this);
+        this.spawns = map.getSpawns();
+        this.pickups = map.getPickups();
 
         // Start game
         this.respawnPlayer();
@@ -58,6 +56,7 @@ export class GameScene extends Phaser.Scene {
         const ud = this.keys.up.isDown || this.keys.down.isDown;
 
         unit.gameObj.setVelocity(0, 0);
+        unit.checkPickups();
 
         if (Phaser.Input.Keyboard.JustDown(this.keys.space)) {
             unit.placeBomb();

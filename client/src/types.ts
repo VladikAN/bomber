@@ -93,6 +93,8 @@ export class Player extends BaseObj {
         this.gameObj.y = y * Consts.spriteFrame + Consts.spriteOffset;
         this.gameObj.setActive(true).setVisible(true);
         this.gameObj.anims.play(`player-idle-${this.color}`, true);
+        this.power = 1;
+        this.bombsCount = 1;
         this.isDead = false;
     };
 
@@ -130,6 +132,38 @@ export class Player extends BaseObj {
         }
         const bomb = new Bomb(this.scene, crd.x, crd.y, this.power);
         this.bombs.push(bomb);
+    };
+
+    checkPickups = (): void => {
+        this.scene.physics.world.overlapTiles(
+            this.gameObj,
+            this.scene.pickups,
+            (_, tile) => this._hitPickup(<Phaser.Tilemaps.Tile><unknown>tile),
+            null,
+            this);
+    };
+
+    private _hitPickup = (tile: Phaser.Tilemaps.Tile): void => {
+        const org = tile.index;
+        tile.index = Tiles.free;
+
+        if (org == Tiles.free) {
+            return;
+        } else if (org == Tiles.powerUp) {
+            this._powerUp();
+        } else if (org == Tiles.addBomb) {
+            this._addBomb();
+        }
+
+        this.time.delayedCall(Consts.bonusTimer, function(t, org) { t.index = org; }, [tile, org], this);
+    };
+
+    private _addBomb = (): void => {
+        this.bombsCount = this.bombsCount < 5 ? this.bombsCount + 1 : this.bombsCount;
+    };
+
+    private _powerUp = (): void => {
+        this.power = this.power < 3 ? this.power + 1 : this.power;
     };
 }
 
@@ -191,7 +225,7 @@ const spawnBlast = (scene: GameScene, x: number, y: number, power: number): void
 
             // Remember brick wall for later destruction
             const tile = layer.getTileAtWorldXY(gameObj.x + offset.x, gameObj.y + offset.y, true);
-            if (!tile || tile.index != Tiles.free) {
+            if (!tile || (tile.index == Tiles.brick || tile.index == Tiles.wall)) {
                 bricks.push(tile);
                 break;
             }
