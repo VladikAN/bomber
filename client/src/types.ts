@@ -1,4 +1,4 @@
-import { Scene } from 'phaser';
+import { Game, Scene } from 'phaser';
 import { Consts, Tiles } from './consts';
 import { GameScene } from './gameScene';
 import { alignToWorld, findBombs, findPlayers, pushObject } from './utils';
@@ -24,10 +24,11 @@ export class Player extends BaseObj {
     power = 1;
     bombsCount = 1;
     bombs: Bomb[] = [];
-    color = 'blue';
+    color: string;
 
-    constructor(scene: GameScene, x: number, y: number) {
+    constructor(scene: GameScene, color: string, x: number, y: number) {
         super(scene, 'player');
+        this.color = color;
 
         // Draw player
         const gameObj = scene.physics.add.sprite(
@@ -35,16 +36,44 @@ export class Player extends BaseObj {
             y * Consts.spriteFrame + Consts.spriteOffset,
             'sprite');
         gameObj.setDepth(10); // put on top of others
-        gameObj.play(`player-idle-${this.color}`);
 
         // Setup physics
-        gameObj.setCollideWorldBounds(true);
         gameObj.setSize(Consts.spriteFrame * .5, Consts.spriteFrame * .5);
+        gameObj.setCollideWorldBounds(true);
         this.scene.physics.add.collider(gameObj, scene.layers);
 
         this.gameObj = gameObj;
-
         pushObject(this);
+    }
+
+    handleInput = (input: PlayerInput):void => {
+        this.checkPickups();
+
+        if (input.keySpace) {
+            this.placeBomb();
+        }
+
+        if (input.keyLeft || input.keyRight) {
+            if (input.keyLeft) {
+                this.left();
+            } else if (input.keyRight) {
+                this.right();
+            }
+
+            return;
+        }
+
+        if (input.keyUp || input.keyDown) {
+            if (input.keyUp) {
+                this.up();
+            } else if (input.keyDown) {
+                this.down();
+            }
+
+            return;
+        }
+
+        this.idle();
     }
 
     left = (): void => {
@@ -83,6 +112,7 @@ export class Player extends BaseObj {
         if (this.isDead) {
             return;
         }
+        this.gameObj.setVelocity(0, 0);
         this.gameObj.anims.play(`player-idle-${this.color}`, true);
     };
 
@@ -103,7 +133,10 @@ export class Player extends BaseObj {
         this.isDead = true;
         this.gameObj.anims.play(`player-death-${this.color}`, true);
         this.gameObj.once('animationcomplete', () => { this.gameObj.setActive(false).setVisible(false); });
-        this.scene.time.delayedCall(Consts.respawnTimer, function() { this.scene.respawnPlayer(); }, [], this);
+        this.scene.time.delayedCall(Consts.respawnTimer, (player: Player) => {
+            const loc = player.scene.spawns[Phaser.Math.Between(0, player.scene.spawns.length - 1)];
+            player.spawn(loc.x, loc.y);
+        }, [this], this);
     };
 
     hasBombs = (): boolean => {
@@ -165,6 +198,7 @@ export class PowerUp extends BaseObj {
     constructor(scene: GameScene, tile: Phaser.Tilemaps.Tile) {
         super(scene, 'powerup');
         this.tile = tile;
+        pushObject(this)
     }
 
     destroy = (): void => {
@@ -297,3 +331,65 @@ const destroyBricks = (tile: Phaser.Tilemaps.Tile): void => {
     gameObj.play('brick-destroy');
     gameObj.once('animationcomplete', () => { gameObj.destroy(); });
 };
+
+export class PlayerInput {
+    keyLeft: boolean;
+    keyRight: boolean;
+    keyUp: boolean;
+    keyDown: boolean;
+    keySpace: boolean;
+
+    constructor(left: boolean, right: boolean, up: boolean, down: boolean, space: boolean) {
+        this.keyLeft = left;
+        this.keyRight = right;
+        this.keyUp = up;
+        this.keyDown = down;
+        this.keySpace = space;
+    }
+}
+
+export class PlayerInputHandler {
+    private p1Left: Phaser.Input.Keyboard.Key;
+    private p1Right: Phaser.Input.Keyboard.Key;
+    private p1Up: Phaser.Input.Keyboard.Key;
+    private p1Down: Phaser.Input.Keyboard.Key;
+    private p1Bomb: Phaser.Input.Keyboard.Key;
+
+    private p2Left: Phaser.Input.Keyboard.Key;
+    private p2Right: Phaser.Input.Keyboard.Key;
+    private p2Up: Phaser.Input.Keyboard.Key;
+    private p2Down: Phaser.Input.Keyboard.Key;
+    private p2Bomb: Phaser.Input.Keyboard.Key;
+
+    constructor(scene: GameScene) {
+        this.p1Left = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.LEFT);
+        this.p1Right = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.RIGHT);
+        this.p1Up = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.UP);
+        this.p1Down = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.DOWN);
+        this.p1Bomb = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+
+        this.p2Left = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A);
+        this.p2Right = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D);
+        this.p2Up = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);
+        this.p2Down = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
+        this.p2Bomb = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F);
+    }
+
+    readPlayer1 = (): PlayerInput => {
+        return new PlayerInput(
+            this.p1Left.isDown,
+            this.p1Right.isDown,
+            this.p1Up.isDown,
+            this.p1Down.isDown,
+            this.p1Bomb.isDown);
+    }
+
+    readPlayer2 = (): PlayerInput => {
+        return new PlayerInput(
+            this.p2Left.isDown,
+            this.p2Right.isDown,
+            this.p2Up.isDown,
+            this.p2Down.isDown,
+            this.p2Bomb.isDown);
+    }
+}

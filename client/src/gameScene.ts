@@ -1,15 +1,15 @@
 import { setupAnimations } from './animations';
 import { Consts } from './consts';
 import { MapLoader } from './maps';
-import { Player, Point, PowerUp } from './types';
+import { Player, PlayerInputHandler, Point, PowerUp } from './types';
 
 export class GameScene extends Phaser.Scene {
-    keys: Phaser.Types.Input.Keyboard.CursorKeys;
-
     layers: Phaser.Tilemaps.TilemapLayer[] = [];
     pickups: PowerUp[] = [];
     spawns: Point[] = [];
-    player: Player;
+    player1: Player;
+    player2: Player;
+    inputHandler: PlayerInputHandler;
 
     constructor() {
         super({ key: 'GameScene' });
@@ -22,9 +22,6 @@ export class GameScene extends Phaser.Scene {
     }
 
     create(): void {
-        // Init engine stuff
-        this.keys = this.input.keyboard.createCursorKeys();
-
         // Init game stuff
         setupAnimations(this);
 
@@ -34,57 +31,19 @@ export class GameScene extends Phaser.Scene {
         this.pickups = map.getPickups().map(tile => new PowerUp(this, tile));
 
         // Start game
-        this.respawnPlayer();
+        this.player1 = new Player(this, 'blue', this.spawns[0].x, this.spawns[0].y);
+        //this.player2 = new Player(this, 'red');
+        //this.player2.spawn(this.spawns[2].x, this.spawns[2].y);
+        this.inputHandler = new PlayerInputHandler(this);
     }
 
     update = (): void => {
-        // Handle player keyboard input
-        this.handleInput(this.player);
-    };
+        // Handle player1 keyboard input
+        const input1 = this.inputHandler.readPlayer1();
+        this.player1.handleInput(input1);
 
-    respawnPlayer = (): void => {
-        const loc = this.spawns[Phaser.Math.Between(0, this.spawns.length - 1)];
-        if (this.player != null) {
-            this.player.spawn(loc.x, loc.y);
-        } else {
-            this.player = new Player(this, loc.x, loc.y);
-        }
-    };
-
-    handleInput = (unit: Player): void => {
-        const lr = this.keys.left.isDown || this.keys.right.isDown;
-        const ud = this.keys.up.isDown || this.keys.down.isDown;
-
-        unit.gameObj.setVelocity(0, 0);
-        unit.checkPickups();
-
-        if (Phaser.Input.Keyboard.JustDown(this.keys.space)) {
-            unit.placeBomb();
-        }
-
-        if (!lr && !ud) {
-            unit.idle();
-            return;
-        }
-
-        if (lr) {
-            if (this.keys.left.isDown) {
-                unit.left();
-            } else if (this.keys.right.isDown) {
-                unit.right();
-            }
-
-            return;
-        }
-
-        if (ud) {
-            if (this.keys.up.isDown) {
-                unit.up();
-            } else if (this.keys.down.isDown) {
-                unit.down();
-            }
-
-            return;
-        }
+        // Handle player2 keyboard input
+        //const input2 = this.inputHandler.readPlayer2();
+        //this.player2.handleInput(input2);
     };
 }
