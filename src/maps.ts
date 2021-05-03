@@ -11,7 +11,9 @@ export class MapLoader {
 
         // Put everything to the center
         scene.cameras.main.setZoom(1);
-        scene.cameras.main.centerOn(this.map.widthInPixels / 2, this.map.heightInPixels / 2);
+        scene.cameras.main.centerOn(
+            this.map.widthInPixels / 2 + Consts.spriteFrame,
+            this.map.heightInPixels / 2 + Consts.spriteFrame);
 
         // Create level from csv
         this.levelLayer = this.map.createLayer(0, tileset, Consts.spriteFrame, Consts.spriteFrame);

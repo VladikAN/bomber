@@ -8,7 +8,8 @@ const config: Phaser.Types.Core.GameConfig = {
     width: Consts.screenW,
     height: Consts.screenH,
     physics: { default: 'arcade' },
-    scene: [GameScene]
+    scene: [GameScene],
+    zoom: 2,
 };
 
 export class BomberManGame extends Phaser.Game {

@@ -6,8 +6,8 @@ export const Consts = {
     animationFrameRate: 12,
     spriteFrame: 16,
     spriteOffset: 8,
-    screenW: 800,
-    screenH: 600
+    screenW: 350,
+    screenH: 350
 };
 
 export const Tiles = {
