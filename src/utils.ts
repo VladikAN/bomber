@@ -1,5 +1,5 @@
 import { Consts } from './consts';
-import { BaseObj, Bomb, Player, Point } from './types';
+import { BaseObj, Bomb, ObjType, Player, Point } from './types';
 
 const objects: BaseObj[] = [];
 
@@ -8,7 +8,7 @@ export const pushObject = (obj: BaseObj): void => {
 };
 
 export const findPlayers = (x: number, y: number): Player[] => {
-    const allPlayers = objects.filter((obj) => obj.type == 'player' && !obj.isDead);
+    const allPlayers = objects.filter((obj) => obj.type == ObjType.player && !obj.isDead);
     const inTile = allPlayers.filter((p) => {
         const crd = alignToWorld(p.gameObj.x, p.gameObj.y);
         return crd.x == x && crd.y == y;
@@ -18,7 +18,7 @@ export const findPlayers = (x: number, y: number): Player[] => {
 };
 
 export const findBombs = (x: number, y: number): Bomb[] => {
-    const allBombs = objects.filter((obj) => obj.type == 'bomb' && !obj.isDead);
+    const allBombs = objects.filter((obj) => obj.type == ObjType.bomb && !obj.isDead);
     const inTile = allBombs.filter((b) => {
         const crd = alignToWorld(b.gameObj.x, b.gameObj.y);
         return crd.x == x && crd.y == y;

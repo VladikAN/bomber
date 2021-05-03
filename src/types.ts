@@ -1,4 +1,4 @@
-import { Game, Scene } from 'phaser';
+import { Scene } from 'phaser';
 import { Consts, Tiles } from './consts';
 import { GameScene } from './gameScene';
 import { alignToWorld, findBombs, findPlayers, pushObject } from './utils';
@@ -8,13 +8,24 @@ export class Point {
     y: number;
 }
 
+export enum Color {
+    blue = 'blue',
+    red = 'red'
+}
+
+export enum ObjType {
+    player,
+    bomb,
+    powerup
+}
+
 export class BaseObj {
     scene: GameScene;
-    type: string;
+    type: ObjType;
     isDead = false;
     gameObj: Phaser.Physics.Arcade.Sprite = null;
 
-    constructor(scene: GameScene, type: string) {
+    constructor(scene: GameScene, type: ObjType) {
         this.scene = scene;
         this.type = type;
     }
@@ -24,10 +35,10 @@ export class Player extends BaseObj {
     power = 1;
     bombsCount = 1;
     bombs: Bomb[] = [];
-    color: string;
+    color: Color;
 
-    constructor(scene: GameScene, color: string, x: number, y: number) {
-        super(scene, 'player');
+    constructor(scene: GameScene, color: Color, x: number, y: number) {
+        super(scene, ObjType.player);
         this.color = color;
 
         // Draw player
@@ -36,6 +47,7 @@ export class Player extends BaseObj {
             y * Consts.spriteFrame + Consts.spriteOffset,
             'sprite');
         gameObj.setDepth(10); // put on top of others
+        gameObj.play(`player-idle-${this.color}`);
 
         // Setup physics
         gameObj.setSize(Consts.spriteFrame * .5, Consts.spriteFrame * .5);
@@ -46,8 +58,9 @@ export class Player extends BaseObj {
         pushObject(this);
     }
 
-    handleInput = (input: PlayerInput):void => {
+    handleInput = (input: PlayerInput): void => {
         this.checkPickups();
+        this.gameObj.setVelocity(0, 0);
 
         if (input.keySpace) {
             this.placeBomb();
@@ -74,7 +87,7 @@ export class Player extends BaseObj {
         }
 
         this.idle();
-    }
+    };
 
     left = (): void => {
         if (this.isDead) {
@@ -196,9 +209,9 @@ export class PowerUp extends BaseObj {
     tile: Phaser.Tilemaps.Tile;
 
     constructor(scene: GameScene, tile: Phaser.Tilemaps.Tile) {
-        super(scene, 'powerup');
+        super(scene, ObjType.powerup);
         this.tile = tile;
-        pushObject(this)
+        pushObject(this);
     }
 
     destroy = (): void => {
@@ -225,7 +238,7 @@ export class Bomb extends BaseObj {
     power: number;
 
     constructor(scene: GameScene, x: number, y: number, power: number) {
-        super(scene, 'bomb');
+        super(scene, ObjType.bomb);
 
         // Draw bomb
         const gameObj = scene.physics.add.sprite(
@@ -382,7 +395,7 @@ export class PlayerInputHandler {
             this.p1Up.isDown,
             this.p1Down.isDown,
             this.p1Bomb.isDown);
-    }
+    };
 
     readPlayer2 = (): PlayerInput => {
         return new PlayerInput(
@@ -391,5 +404,5 @@ export class PlayerInputHandler {
             this.p2Up.isDown,
             this.p2Down.isDown,
             this.p2Bomb.isDown);
-    }
+    };
 }

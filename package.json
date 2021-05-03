@@ -5,8 +5,8 @@
   "main": "index.js",
   "scripts": {
     "build": "webpack",
-    "dev": "concurrently \"webpack --watch\" \"live-server --port=8080 client/wwwroot/ \"",
-    "lint": "eslint --ext ts client/src/",
+    "dev": "concurrently \"webpack --watch\" \"live-server --port=8080 wwwroot/ \"",
+    "lint": "eslint --ext ts src/",
     "lint:fix": "npm run lint -- --fix"
   },
   "author": "",

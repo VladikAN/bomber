@@ -1,6 +1,6 @@
-## Client
+## Bomber Man Game
 
-Client is build with the [Phaser](http://phaser.io/) HTML5 game engine.
+Game is build with the [Phaser](http://phaser.io/) HTML5 game engine with the TypeScript.
 
 Run ```npm install``` from the client directory to install all dependencies.
 

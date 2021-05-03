@@ -1,7 +1,7 @@
 import { setupAnimations } from './animations';
 import { Consts } from './consts';
 import { MapLoader } from './maps';
-import { Player, PlayerInputHandler, Point, PowerUp } from './types';
+import { Color, Player, PlayerInputHandler, Point, PowerUp } from './types';
 
 export class GameScene extends Phaser.Scene {
     layers: Phaser.Tilemaps.TilemapLayer[] = [];
@@ -31,9 +31,8 @@ export class GameScene extends Phaser.Scene {
         this.pickups = map.getPickups().map(tile => new PowerUp(this, tile));
 
         // Start game
-        this.player1 = new Player(this, 'blue', this.spawns[0].x, this.spawns[0].y);
-        //this.player2 = new Player(this, 'red');
-        //this.player2.spawn(this.spawns[2].x, this.spawns[2].y);
+        this.player1 = new Player(this, Color.blue, this.spawns[0].x, this.spawns[0].y);
+        this.player2 = new Player(this, Color.red, this.spawns[2].x, this.spawns[2].y);
         this.inputHandler = new PlayerInputHandler(this);
     }
 
@@ -43,7 +42,7 @@ export class GameScene extends Phaser.Scene {
         this.player1.handleInput(input1);
 
         // Handle player2 keyboard input
-        //const input2 = this.inputHandler.readPlayer2();
-        //this.player2.handleInput(input2);
+        const input2 = this.inputHandler.readPlayer2();
+        this.player2.handleInput(input2);
     };
 }

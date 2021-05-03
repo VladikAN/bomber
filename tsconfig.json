@@ -3,7 +3,7 @@
         "target": "es5"
     },
     "include": [
-        "client/src/*"
+        "src/*"
     ],
     "typeRoots": [
         "./node_modules/phaser/types",
